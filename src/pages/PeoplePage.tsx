@@ -1,11 +1,11 @@
 import { useState } from "react";
-// Page rendered inside Layout with shared Navbar
 import { usePeople } from "@/hooks/usePeople";
 import { useRecordings } from "@/hooks/useRecordings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -14,10 +14,10 @@ import {
 } from "@/components/ui/dialog";
 import {
   Plus,
-  Pencil,
   Trash2,
   Users,
   Mic,
+  Save,
 } from "lucide-react";
 import type { Person } from "@/types/people";
 
@@ -27,15 +27,18 @@ export function PeoplePage() {
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState("");
   const [newTags, setNewTags] = useState("");
-  const [editing, setEditing] = useState<Person | null>(null);
+  const [filterTag, setFilterTag] = useState("");
+
+  // Selected person for view/edit modal
+  const [selected, setSelected] = useState<Person | null>(null);
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editAliases, setEditAliases] = useState("");
   const [editTags, setEditTags] = useState("");
-  const [filterTag, setFilterTag] = useState("");
+  const [dirty, setDirty] = useState(false);
 
-  // Count recordings per person (from analysis participants + transcript speakers)
+  // Count recordings per person
   const recordingCounts = new Map<string, number>();
   for (const r of recordings) {
     const names = new Set<string>();
@@ -57,28 +60,46 @@ export function PeoplePage() {
     setNewTags("");
   };
 
-  const handleEdit = (person: Person) => {
-    setEditing(person);
+  const openPerson = (person: Person) => {
+    setSelected(person);
     setEditName(person.name);
     setEditRole(person.role || "");
     setEditNotes(person.notes || "");
     setEditAliases((person.aliases || []).join(", "));
     setEditTags((person.tags || []).join(", "));
+    setDirty(false);
   };
 
-  const handleSaveEdit = async () => {
-    if (!editing) return;
+  const handleSave = async () => {
+    if (!selected) return;
     const aliases = editAliases.split(",").map((a) => a.trim()).filter(Boolean);
     const tags = editTags.split(",").map((t) => t.trim()).filter(Boolean);
-    await updatePerson(editing.id, {
+    await updatePerson(selected.id, {
       name: editName,
       role: editRole || undefined,
       notes: editNotes || undefined,
       aliases: aliases.length > 0 ? aliases : undefined,
       tags: tags.length > 0 ? tags : undefined,
     } as any);
-    setEditing(null);
+    setDirty(false);
+    // Update selected with new values
+    setSelected({
+      ...selected,
+      name: editName,
+      role: editRole || undefined,
+      notes: editNotes || undefined,
+      aliases: aliases.length > 0 ? aliases : undefined,
+      tags: tags.length > 0 ? tags : undefined,
+    });
   };
+
+  const handleDelete = async (person: Person) => {
+    if (!confirm(`Delete "${person.name}"?`)) return;
+    await deletePerson(person.id);
+    setSelected(null);
+  };
+
+  const markDirty = () => setDirty(true);
 
   const getRecordingCount = (person: Person) => {
     let count = recordingCounts.get(person.name.toLowerCase()) || 0;
@@ -88,18 +109,10 @@ export function PeoplePage() {
     return count;
   };
 
-  // Collect all unique tags
   const allTags = [...new Set(people.flatMap((p) => p.tags || []))].sort();
-
   const filteredPeople = filterTag
     ? people.filter((p) => p.tags?.includes(filterTag))
     : people;
-
-  const SOURCE_COLORS: Record<string, string> = {
-    manual: "bg-blue-100 text-blue-800",
-    pocket: "bg-green-100 text-green-800",
-    inferred: "bg-purple-100 text-purple-800",
-  };
 
   return (
     <div className="min-h-full bg-background">
@@ -113,6 +126,7 @@ export function PeoplePage() {
             {people.length} people — used for speaker inference in transcript analysis
           </p>
         </div>
+
         {/* Add person */}
         <div className="flex gap-2 mb-6">
           <Input
@@ -130,11 +144,11 @@ export function PeoplePage() {
             className="w-40"
           />
           <Input
-            placeholder="Tags (optional, comma-sep)"
+            placeholder="Tags (comma-sep)"
             value={newTags}
             onChange={(e) => setNewTags(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            className="w-48"
+            className="w-44"
           />
           <Button onClick={handleAdd} disabled={!newName.trim()} size="sm">
             <Plus className="h-4 w-4 mr-1" />
@@ -180,108 +194,121 @@ export function PeoplePage() {
         ) : (
           <div className="space-y-2">
             {filteredPeople.map((person) => (
-              <Card key={person.id}>
+              <Card
+                key={person.id}
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => openPerson(person)}
+              >
                 <CardContent className="p-4 flex items-center gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium">{person.name}</span>
                       {person.role && (
-                        <span className="text-xs text-muted-foreground">
-                          {person.role}
-                        </span>
+                        <span className="text-xs text-muted-foreground">{person.role}</span>
                       )}
-                      <Badge
-                        variant="secondary"
-                        className={`text-xs ${SOURCE_COLORS[person.source] || ""}`}
-                      >
-                        {person.source}
-                      </Badge>
+                      {person.tags?.map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-xs px-1.5 py-0">
+                          {tag}
+                        </Badge>
+                      ))}
                     </div>
                     {person.aliases && person.aliases.length > 0 && (
                       <p className="text-xs text-muted-foreground mt-0.5">
                         aka {person.aliases.join(", ")}
                       </p>
                     )}
-                    {person.tags && person.tags.length > 0 && (
-                      <div className="flex gap-1 mt-1">
-                        {person.tags.map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs px-1.5 py-0">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    {person.notes && (
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                        {person.notes}
-                      </p>
-                    )}
                   </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Mic className="h-3 w-3" />
-                      {getRecordingCount(person)} recording{getRecordingCount(person) !== 1 ? "s" : ""}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(person)}
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => deletePerson(person.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
+                    <Mic className="h-3 w-3" />
+                    {getRecordingCount(person)}
+                  </span>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
 
-        {/* Edit dialog */}
-        {editing && (
-          <Dialog open onOpenChange={() => setEditing(null)}>
+        {/* View/Edit modal */}
+        {selected && (
+          <Dialog open onOpenChange={() => setSelected(null)}>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Edit Person</DialogTitle>
+                <DialogTitle>{selected.name}</DialogTitle>
               </DialogHeader>
-              <div className="space-y-3">
-                <Input
-                  placeholder="Name"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                />
-                <Input
-                  placeholder="Role"
-                  value={editRole}
-                  onChange={(e) => setEditRole(e.target.value)}
-                />
-                <Input
-                  placeholder="Aliases (comma-separated, e.g. 'Joaquin, J')"
-                  value={editAliases}
-                  onChange={(e) => setEditAliases(e.target.value)}
-                />
-                <Input
-                  placeholder="Tags (comma-separated, e.g. 'engineering, leadership')"
-                  value={editTags}
-                  onChange={(e) => setEditTags(e.target.value)}
-                />
-                <Input
-                  placeholder="Notes (e.g., 'usually discusses engineering topics')"
-                  value={editNotes}
-                  onChange={(e) => setEditNotes(e.target.value)}
-                />
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setEditing(null)}>
-                    Cancel
+
+              <div className="space-y-4">
+                {/* Editable fields */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">Name</label>
+                    <Input
+                      value={editName}
+                      onChange={(e) => { setEditName(e.target.value); markDirty(); }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">Role</label>
+                    <Input
+                      placeholder="e.g. CTO, Engineer, Client"
+                      value={editRole}
+                      onChange={(e) => { setEditRole(e.target.value); markDirty(); }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">Aliases (comma-separated)</label>
+                    <Input
+                      placeholder="e.g. Joaquin, J, joaquim"
+                      value={editAliases}
+                      onChange={(e) => { setEditAliases(e.target.value); markDirty(); }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">Tags (comma-separated)</label>
+                    <Input
+                      placeholder="e.g. engineering, leadership"
+                      value={editTags}
+                      onChange={(e) => { setEditTags(e.target.value); markDirty(); }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground block mb-1">Notes</label>
+                    <Input
+                      placeholder="e.g. usually discusses backend architecture"
+                      value={editNotes}
+                      onChange={(e) => { setEditNotes(e.target.value); markDirty(); }}
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Info */}
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Mic className="h-3 w-3" />
+                    {getRecordingCount(selected)} recording{getRecordingCount(selected) !== 1 ? "s" : ""}
+                  </span>
+                  <span>Source: {selected.source}</span>
+                </div>
+
+                {/* Actions */}
+                <div className="flex justify-between">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDelete(selected)}
+                    className="text-destructive hover:text-destructive gap-1"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
                   </Button>
-                  <Button size="sm" onClick={handleSaveEdit}>
+                  <Button
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={!dirty}
+                    className="gap-1"
+                  >
+                    <Save className="h-3.5 w-3.5" />
                     Save
                   </Button>
                 </div>
