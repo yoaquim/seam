@@ -620,18 +620,14 @@ function TranscriptTab({ segments, speakerMap, people, dirName }: TranscriptTabP
     : resolvedSegments;
 
   const handleAssignSpeaker = async (segmentIndex: number, speaker: string) => {
-    // Find all consecutive segments with the same original speaker starting from this one
-    const originalSpeaker = segments[segmentIndex]?.speaker || "Unknown";
+    // Update ALL segments with the same speaker name across the entire transcript
+    const originalSpeaker = localSpeakerMap[String(segmentIndex)] || segments[segmentIndex]?.speaker || "Unknown";
     const assignments: Record<number, string> = {};
 
-    // Assign this segment and all following segments with the same speaker until a different speaker appears
-    for (let j = segmentIndex; j < segments.length; j++) {
-      const seg = segments[j];
-      const currentResolved = localSpeakerMap[String(j)] || seg.speaker || "Unknown";
-      if (j === segmentIndex || currentResolved === originalSpeaker) {
+    for (let j = 0; j < segments.length; j++) {
+      const currentResolved = localSpeakerMap[String(j)] || segments[j].speaker || "Unknown";
+      if (currentResolved === originalSpeaker) {
         assignments[j] = speaker;
-      } else {
-        break;
       }
     }
 
