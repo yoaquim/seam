@@ -184,10 +184,15 @@ export function sortAndFilter(
   return result;
 }
 
-/** Extract date from recording — prefers created_at, falls back to dir name prefix */
+/** Extract local date from recording — converts UTC created_at to local date */
 export function getRecordingDate(r: Recording): string {
-  return r.data.created_at?.slice(0, 10)
-    || r.dirName.match(/^(\d{4}-\d{2}-\d{2})/)?.[1]
+  if (r.data.created_at) {
+    const d = new Date(r.data.created_at);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
+    }
+  }
+  return r.dirName.match(/^(\d{4}-\d{2}-\d{2})/)?.[1]
     || "Unknown date";
 }
 
