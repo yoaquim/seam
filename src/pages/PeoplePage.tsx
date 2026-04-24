@@ -30,6 +30,7 @@ export function PeoplePage() {
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editAliases, setEditAliases] = useState("");
 
   // Count recordings per person (from analysis participants + transcript speakers)
   const recordingCounts = new Map<string, number>();
@@ -56,20 +57,28 @@ export function PeoplePage() {
     setEditName(person.name);
     setEditRole(person.role || "");
     setEditNotes(person.notes || "");
+    setEditAliases((person.aliases || []).join(", "));
   };
 
   const handleSaveEdit = async () => {
     if (!editing) return;
+    const aliases = editAliases.split(",").map((a) => a.trim()).filter(Boolean);
     await updatePerson(editing.id, {
       name: editName,
       role: editRole || undefined,
       notes: editNotes || undefined,
-    });
+      aliases: aliases.length > 0 ? aliases : undefined,
+    } as any);
     setEditing(null);
   };
 
-  const getRecordingCount = (name: string) =>
-    recordingCounts.get(name.toLowerCase()) || 0;
+  const getRecordingCount = (person: Person) => {
+    let count = recordingCounts.get(person.name.toLowerCase()) || 0;
+    for (const alias of person.aliases || []) {
+      count += recordingCounts.get(alias.toLowerCase()) || 0;
+    }
+    return count;
+  };
 
   const SOURCE_COLORS: Record<string, string> = {
     manual: "bg-blue-100 text-blue-800",
@@ -136,6 +145,11 @@ export function PeoplePage() {
                         {person.source}
                       </Badge>
                     </div>
+                    {person.aliases && person.aliases.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        aka {person.aliases.join(", ")}
+                      </p>
+                    )}
                     {person.notes && (
                       <p className="text-xs text-muted-foreground mt-0.5 truncate">
                         {person.notes}
@@ -146,7 +160,7 @@ export function PeoplePage() {
                   <div className="flex items-center gap-3 shrink-0">
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Mic className="h-3 w-3" />
-                      {getRecordingCount(person.name)} recording{getRecordingCount(person.name) !== 1 ? "s" : ""}
+                      {getRecordingCount(person)} recording{getRecordingCount(person) !== 1 ? "s" : ""}
                     </span>
                     <Button
                       variant="outline"
@@ -186,6 +200,11 @@ export function PeoplePage() {
                   placeholder="Role"
                   value={editRole}
                   onChange={(e) => setEditRole(e.target.value)}
+                />
+                <Input
+                  placeholder="Aliases (comma-separated, e.g. 'Joaquin, J')"
+                  value={editAliases}
+                  onChange={(e) => setEditAliases(e.target.value)}
                 />
                 <Input
                   placeholder="Notes (e.g., 'usually discusses engineering topics')"

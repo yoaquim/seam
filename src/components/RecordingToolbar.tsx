@@ -184,10 +184,11 @@ export function sortAndFilter(
   return result;
 }
 
-/** Extract local date from recording — converts UTC created_at to local date */
+/** Extract local date from recording — prefers recording_at (when recorded) over created_at (when processed) */
 export function getRecordingDate(r: Recording): string {
-  if (r.data.created_at) {
-    const d = new Date(r.data.created_at);
+  const ts = r.data.recording_at || r.data.created_at;
+  if (ts) {
+    const d = new Date(ts);
     if (!isNaN(d.getTime())) {
       return d.toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
     }

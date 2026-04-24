@@ -12,6 +12,7 @@ const baseRecording: Recording = {
     description: "Monday standup",
     duration: 1247,
     language: "en",
+    recording_at: null,
     created_at: "2026-04-22T09:00:00Z",
     tags: [{ name: "standup" }, { name: "team" }],
     transcript: [

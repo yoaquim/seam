@@ -220,23 +220,30 @@ export function RecordingDetail() {
   };
 
   const { data, analysis } = recording;
-  // Extract date: prefer created_at, fallback to dir name prefix
-  const date = data.created_at?.slice(0, 10)
-    || dirName?.match(/^(\d{4}-\d{2}-\d{2})/)?.[1]
-    || null;
+  // Prefer recording_at (when recorded) over created_at (when processed)
+  const recordedTs = data.recording_at || data.created_at;
+  const date = recordedTs
+    ? new Date(recordedTs).toLocaleDateString("en-CA")
+    : dirName?.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] || null;
+  const processedDate = data.recording_at && data.created_at
+    ? new Date(data.created_at).toLocaleDateString("en-CA")
+    : null;
   const tags = (data.tags || []).map((t) =>
     typeof t === "string" ? t : t.name
   );
 
   return (
-    <div className="min-h-full bg-background">
-      {/* Recording info + tabs */}
-      <div className="max-w-5xl mx-auto px-6 pt-6">
+    <div className="h-full flex flex-col bg-background">
+      {/* Recording info + tabs — sticky */}
+      <div className="shrink-0 max-w-5xl w-full mx-auto px-6 pt-6">
         <div className="flex items-start justify-between gap-4 mb-3">
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-bold truncate">{data.title}</h1>
             <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap mt-0.5">
               {date && <span>{date}</span>}
+              {processedDate && processedDate !== date && (
+                <span className="text-muted-foreground/60">processed {processedDate}</span>
+              )}
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {formatDuration(data.duration)}
@@ -288,8 +295,9 @@ export function RecordingDetail() {
         </div>
       </div>
 
-      {/* Content */}
-      <main className="max-w-5xl mx-auto px-6 py-6">
+      {/* Content — scrollable */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-5xl mx-auto px-6 py-6">
         {activeTab === "summary" && <SummaryTab analysis={analysis} />}
         {activeTab === "actions" && <ActionsTab analysis={analysis} dirName={dirName!} />}
         {activeTab === "transcript" && (
@@ -306,6 +314,7 @@ export function RecordingDetail() {
             title={data.title}
           />
         )}
+        </div>
       </main>
     </div>
   );

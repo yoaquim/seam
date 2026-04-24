@@ -177,10 +177,14 @@ def write_recording(recording: dict, details: dict, deleted: set[str] | None = N
     """Write recording data as structured JSON and human-readable markdown."""
     rec_id = recording.get("id") or details.get("id") or "unknown"
     title = recording.get("title") or details.get("title") or "Untitled"
+    # Prefer recording_at (when recorded) over created_at (when processed)
+    recorded = recording.get("recording_at") or details.get("recording_at") or \
+        recording.get("recordingAt") or details.get("recordingAt")
     created = recording.get("createdAt") or details.get("createdAt") or \
         recording.get("created_at") or details.get("created_at") or \
         datetime.now(timezone.utc).isoformat()
-    date_str = created[:10]
+    primary_date = recorded or created
+    date_str = primary_date[:10]
     slug = slugify(title)
     dir_name = f"{date_str}_{slug}"
 
@@ -206,6 +210,7 @@ def write_recording(recording: dict, details: dict, deleted: set[str] | None = N
         "description": recording.get("description") or details.get("description", ""),
         "duration": recording.get("duration") or details.get("duration"),
         "language": recording.get("language") or details.get("language"),
+        "recording_at": recorded,
         "created_at": created,
         "tags": recording.get("tags") or details.get("tags") or [],
         "transcript": transcript_raw,

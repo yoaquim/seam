@@ -241,6 +241,7 @@ interface Person {
   name: string;
   role?: string;
   notes?: string;
+  aliases?: string[];
   source: "manual" | "pocket" | "inferred";
   createdAt: string;
 }
@@ -275,11 +276,13 @@ app.post("/api/people", (req, res) => {
     res.status(409).json({ error: "Person already exists" });
     return;
   }
+  const { aliases } = req.body;
   const person: Person = {
     id: randomUUID(),
     name: name.trim(),
     role: role?.trim() || undefined,
     notes: notes?.trim() || undefined,
+    aliases: Array.isArray(aliases) ? aliases.map((a: string) => a.trim()).filter(Boolean) : undefined,
     source: "manual",
     createdAt: new Date().toISOString(),
   };
@@ -295,10 +298,11 @@ app.put("/api/people/:id", (req, res) => {
     res.status(404).json({ error: "Not found" });
     return;
   }
-  const { name, role, notes } = req.body;
+  const { name, role, notes, aliases } = req.body;
   if (name) people[idx].name = name.trim();
   if (role !== undefined) people[idx].role = role?.trim() || undefined;
   if (notes !== undefined) people[idx].notes = notes?.trim() || undefined;
+  if (aliases !== undefined) people[idx].aliases = Array.isArray(aliases) ? aliases.map((a: string) => a.trim()).filter(Boolean) : undefined;
   writePeople(people);
   res.json(people[idx]);
 });

@@ -11,6 +11,7 @@ export interface RecordingData {
   description: string;
   duration: number | null;
   language: string | null;
+  recording_at: string | null;
   created_at: string;
   tags: Array<{ name: string } | string>;
   transcript: TranscriptSegment[];

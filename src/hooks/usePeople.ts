@@ -33,7 +33,7 @@ export function usePeople() {
     return null;
   }, []);
 
-  const updatePerson = useCallback(async (id: string, updates: Partial<Pick<Person, "name" | "role" | "notes">>) => {
+  const updatePerson = useCallback(async (id: string, updates: Partial<Pick<Person, "name" | "role" | "notes" | "aliases">>) => {
     const res = await fetch(`${API}/api/people/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
