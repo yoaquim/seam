@@ -87,19 +87,23 @@ for rec_dir in "$RECORDINGS_DIR"/*/; do
     fi
 done
 
+MAX_PARALLEL=5
+
 if [ ${#UNANALYZED[@]} -eq 0 ]; then
     log "All recordings have been analyzed."
 else
-    log "Found ${#UNANALYZED[@]} recording(s) missing analysis."
+    log "Found ${#UNANALYZED[@]} recording(s) missing analysis. (max $MAX_PARALLEL parallel)"
 
-    for dir_name in "${UNANALYZED[@]}"; do
-        REC_JSON="$RECORDINGS_DIR/$dir_name/recording.json"
-        ANALYSIS_OUT_DIR="$ANALYSIS_DIR/$dir_name"
+    analyze_one() {
+        local dir_name="$1"
+        local REC_JSON="$RECORDINGS_DIR/$dir_name/recording.json"
+        local ANALYSIS_OUT_DIR="$ANALYSIS_DIR/$dir_name"
 
         mkdir -p "$ANALYSIS_OUT_DIR"
 
         log "  Analyzing: $dir_name"
 
+        local RECORDING_DATA
         RECORDING_DATA=$(cat "$REC_JSON")
 
         claude -p "You are analyzing a Pocket AI recording. Output TWO files and nothing else.
@@ -125,7 +129,7 @@ Write the structured JSON to: $ANALYSIS_OUT_DIR/analysis.json
 
 Use the Write tool to create both files. Do not output anything else." \
             --allowedTools "Write" \
-            2>&1 | tee -a "$LOG_FILE"
+            >> "$LOG_FILE" 2>&1
 
         # Verify analysis was created
         if [ -f "$ANALYSIS_OUT_DIR/analysis.json" ]; then
@@ -133,7 +137,23 @@ Use the Write tool to create both files. Do not output anything else." \
         else
             log "  FAILED: $dir_name (analysis.json not created)"
         fi
+    }
+
+    RUNNING=0
+    for dir_name in "${UNANALYZED[@]}"; do
+        analyze_one "$dir_name" &
+        RUNNING=$((RUNNING + 1))
+
+        # Wait for a slot if we hit the limit
+        if [ "$RUNNING" -ge "$MAX_PARALLEL" ]; then
+            wait -n 2>/dev/null || wait  # wait -n waits for any one job (bash 4.3+)
+            RUNNING=$((RUNNING - 1))
+        fi
     done
+
+    # Wait for remaining jobs
+    wait
+    log "All analysis jobs complete."
 fi
 
 # Clean up old manifest if it exists
