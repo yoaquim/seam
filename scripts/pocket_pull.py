@@ -319,7 +319,7 @@ def main():
 
     # Write list of new dirs to stdout for the orchestration script
     if new_dirs:
-        manifest = ROOT / "data" / ".last-pull-manifest"
+        manifest = DATA_DIR / ".last-pull-manifest"
         manifest.write_text("\n".join(new_dirs) + "\n")
 
 

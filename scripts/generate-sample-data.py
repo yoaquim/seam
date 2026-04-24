@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-RECORDINGS_DIR = ROOT / "data" / "recordings"
-ANALYSIS_DIR = ROOT / "data" / "analysis"
+RECORDINGS_DIR = ROOT / ".seam" / "recordings"
+ANALYSIS_DIR = ROOT / ".seam" / "analysis"
 
 SAMPLES = [
     {
