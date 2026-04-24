@@ -5,6 +5,8 @@ export interface Person {
   notes?: string;
   /** Alternate names that map to this person (e.g. "Joaquin" → "Yoaquim") */
   aliases?: string[];
+  /** Tags for grouping (e.g. "engineering", "client") */
+  tags?: string[];
   /** Auto-imported from Pocket speaker labels */
   source: "manual" | "pocket" | "inferred";
   createdAt: string;

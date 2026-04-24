@@ -242,6 +242,7 @@ interface Person {
   role?: string;
   notes?: string;
   aliases?: string[];
+  tags?: string[];
   source: "manual" | "pocket" | "inferred";
   createdAt: string;
 }
@@ -276,13 +277,14 @@ app.post("/api/people", (req, res) => {
     res.status(409).json({ error: "Person already exists" });
     return;
   }
-  const { aliases } = req.body;
+  const { aliases, tags: personTags } = req.body;
   const person: Person = {
     id: randomUUID(),
     name: name.trim(),
     role: role?.trim() || undefined,
     notes: notes?.trim() || undefined,
     aliases: Array.isArray(aliases) ? aliases.map((a: string) => a.trim()).filter(Boolean) : undefined,
+    tags: Array.isArray(personTags) ? personTags.map((t: string) => t.trim()).filter(Boolean) : undefined,
     source: "manual",
     createdAt: new Date().toISOString(),
   };
@@ -303,6 +305,8 @@ app.put("/api/people/:id", (req, res) => {
   if (role !== undefined) people[idx].role = role?.trim() || undefined;
   if (notes !== undefined) people[idx].notes = notes?.trim() || undefined;
   if (aliases !== undefined) people[idx].aliases = Array.isArray(aliases) ? aliases.map((a: string) => a.trim()).filter(Boolean) : undefined;
+  const { tags: personTags } = req.body;
+  if (personTags !== undefined) people[idx].tags = Array.isArray(personTags) ? personTags.map((t: string) => t.trim()).filter(Boolean) : undefined;
   writePeople(people);
   res.json(people[idx]);
 });

@@ -31,6 +31,8 @@ export function PeoplePage() {
   const [editRole, setEditRole] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editAliases, setEditAliases] = useState("");
+  const [editTags, setEditTags] = useState("");
+  const [filterTag, setFilterTag] = useState("");
 
   // Count recordings per person (from analysis participants + transcript speakers)
   const recordingCounts = new Map<string, number>();
@@ -58,16 +60,19 @@ export function PeoplePage() {
     setEditRole(person.role || "");
     setEditNotes(person.notes || "");
     setEditAliases((person.aliases || []).join(", "));
+    setEditTags((person.tags || []).join(", "));
   };
 
   const handleSaveEdit = async () => {
     if (!editing) return;
     const aliases = editAliases.split(",").map((a) => a.trim()).filter(Boolean);
+    const tags = editTags.split(",").map((t) => t.trim()).filter(Boolean);
     await updatePerson(editing.id, {
       name: editName,
       role: editRole || undefined,
       notes: editNotes || undefined,
       aliases: aliases.length > 0 ? aliases : undefined,
+      tags: tags.length > 0 ? tags : undefined,
     } as any);
     setEditing(null);
   };
@@ -79,6 +84,13 @@ export function PeoplePage() {
     }
     return count;
   };
+
+  // Collect all unique tags
+  const allTags = [...new Set(people.flatMap((p) => p.tags || []))].sort();
+
+  const filteredPeople = filterTag
+    ? people.filter((p) => p.tags?.includes(filterTag))
+    : people;
 
   const SOURCE_COLORS: Record<string, string> = {
     manual: "bg-blue-100 text-blue-800",
@@ -120,14 +132,44 @@ export function PeoplePage() {
           </Button>
         </div>
 
+        {/* Tag filter */}
+        {allTags.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap mb-4">
+            <span className="text-xs text-muted-foreground">Filter:</span>
+            <button
+              onClick={() => setFilterTag("")}
+              className={`text-xs px-2 py-1 rounded border transition-colors cursor-pointer ${
+                filterTag === ""
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-background text-muted-foreground border-border hover:border-foreground"
+              }`}
+            >
+              All ({people.length})
+            </button>
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setFilterTag(filterTag === tag ? "" : tag)}
+                className={`text-xs px-2 py-1 rounded border transition-colors cursor-pointer ${
+                  filterTag === tag
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-background text-muted-foreground border-border hover:border-foreground"
+                }`}
+              >
+                {tag} ({people.filter((p) => p.tags?.includes(tag)).length})
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* People list */}
-        {people.length === 0 ? (
+        {filteredPeople.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground text-sm">
             No people yet. Add people above so Seam can attribute speakers in transcripts.
           </div>
         ) : (
           <div className="space-y-2">
-            {people.map((person) => (
+            {filteredPeople.map((person) => (
               <Card key={person.id}>
                 <CardContent className="p-4 flex items-center gap-4">
                   <div className="flex-1 min-w-0">
@@ -149,6 +191,15 @@ export function PeoplePage() {
                       <p className="text-xs text-muted-foreground mt-0.5">
                         aka {person.aliases.join(", ")}
                       </p>
+                    )}
+                    {person.tags && person.tags.length > 0 && (
+                      <div className="flex gap-1 mt-1">
+                        {person.tags.map((tag) => (
+                          <Badge key={tag} variant="outline" className="text-xs px-1.5 py-0">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
                     )}
                     {person.notes && (
                       <p className="text-xs text-muted-foreground mt-0.5 truncate">
@@ -205,6 +256,11 @@ export function PeoplePage() {
                   placeholder="Aliases (comma-separated, e.g. 'Joaquin, J')"
                   value={editAliases}
                   onChange={(e) => setEditAliases(e.target.value)}
+                />
+                <Input
+                  placeholder="Tags (comma-separated, e.g. 'engineering, leadership')"
+                  value={editTags}
+                  onChange={(e) => setEditTags(e.target.value)}
                 />
                 <Input
                   placeholder="Notes (e.g., 'usually discusses engineering topics')"
