@@ -15,7 +15,7 @@ app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 
 interface SyncState {
-  status: "idle" | "running" | "done" | "error";
+  status: "idle" | "running" | "done" | "error" | "stopped";
   startedAt: string | null;
   finishedAt: string | null;
   lastSyncedAt: string | null;
@@ -80,6 +80,9 @@ function broadcast(event: string, data: unknown) {
   }
 }
 
+// Track the running sync process
+let syncProc: ReturnType<typeof spawn> | null = null;
+
 // SSE endpoint — clients connect here for real-time updates
 app.get("/api/sync/stream", (_req, res) => {
   res.writeHead(200, {
@@ -111,10 +114,20 @@ app.post("/api/sync", (_req, res) => {
   broadcast("status", { status: "running", startedAt: state.startedAt });
 
   const script = path.join(ROOT, "scripts", "pocket-run.sh");
+  // Snapshot analysis dir before sync to know what's new
+  const analysisBefore = new Set<string>();
+  const analysisPath = path.join(ROOT, ".seam", "analysis");
+  try {
+    const { readdirSync } = require("fs");
+    for (const d of readdirSync(analysisPath)) analysisBefore.add(d);
+  } catch {}
+
   const proc = spawn("bash", [script], {
     cwd: ROOT,
     env: { ...process.env },
+    detached: true, // create process group so we can kill the whole tree
   });
+  syncProc = proc;
 
   function appendLog(line: string) {
     state.logs.push(line);
@@ -132,10 +145,24 @@ app.post("/api/sync", (_req, res) => {
   });
 
   proc.on("close", (code) => {
+    syncProc = null;
     state.finishedAt = new Date().toISOString();
     state.lastSyncedAt = readLastSync();
 
-    if (code === 0) {
+    if (state.status === "stopped") {
+      // Cancelled — clean up analyses created during this sync
+      appendLog("Sync stopped. Cleaning up...");
+      try {
+        const { readdirSync, rmSync: rm } = require("fs");
+        for (const d of readdirSync(analysisPath)) {
+          if (!analysisBefore.has(d)) {
+            rm(path.join(analysisPath, d), { recursive: true, force: true });
+            appendLog(`  Removed analysis: ${d}`);
+          }
+        }
+      } catch {}
+      appendLog("Cleanup complete.");
+    } else if (code === 0) {
       state.status = "done";
       appendLog("Sync completed successfully.");
     } else {
@@ -149,17 +176,19 @@ app.post("/api/sync", (_req, res) => {
     const countMatch = pullMatch?.match(/(\d+) recording/);
     const recordingsPulled = countMatch ? parseInt(countMatch[1], 10) : 0;
 
-    // Save to history
-    appendSyncHistory({
-      id: state.startedAt!,
-      status: state.status as "done" | "error",
-      startedAt: state.startedAt!,
-      finishedAt: state.finishedAt,
-      durationMs: new Date(state.finishedAt).getTime() - new Date(state.startedAt!).getTime(),
-      recordingsPulled,
-      error: state.error,
-      logs: [...state.logs],
-    });
+    // Save to history (unless stopped)
+    if (state.status !== "stopped") {
+      appendSyncHistory({
+        id: state.startedAt!,
+        status: state.status as "done" | "error",
+        startedAt: state.startedAt!,
+        finishedAt: state.finishedAt,
+        durationMs: new Date(state.finishedAt).getTime() - new Date(state.startedAt!).getTime(),
+        recordingsPulled,
+        error: state.error,
+        logs: [...state.logs],
+      });
+    }
 
     broadcast("status", {
       status: state.status,
@@ -170,6 +199,27 @@ app.post("/api/sync", (_req, res) => {
   });
 
   res.json({ status: "started" });
+});
+
+// Stop a running sync — kills process and cleans up analyses created during this run
+app.delete("/api/sync", (_req, res) => {
+  if (state.status !== "running" || !syncProc) {
+    res.json({ status: "not_running" });
+    return;
+  }
+
+  state.status = "stopped";
+  appendSyncHistory; // status change triggers cleanup in the close handler
+
+  // Kill the process tree
+  syncProc.kill("SIGTERM");
+  // Also kill any child claude processes
+  try {
+    process.kill(-syncProc.pid!, "SIGTERM");
+  } catch {}
+
+  broadcast("status", { status: "stopped" });
+  res.json({ status: "stopped" });
 });
 
 // Get current state (non-streaming)

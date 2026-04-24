@@ -259,15 +259,27 @@ export function SyncPage() {
                 : "Never synced"}
             </p>
           </div>
-          <Button
-            onClick={sync.startSync}
-            disabled={sync.status === "running"}
-            size="sm"
-            className="gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${sync.status === "running" ? "animate-spin" : ""}`} />
-            {sync.status === "running" ? "Syncing..." : "Start Sync"}
-          </Button>
+          <div className="flex gap-2">
+            {sync.status === "running" ? (
+              <Button
+                onClick={sync.stopSync}
+                size="sm"
+                className="gap-2 bg-red-600 hover:bg-red-700 text-white"
+              >
+                <XCircle className="h-4 w-4" />
+                Stop
+              </Button>
+            ) : (
+              <Button
+                onClick={sync.startSync}
+                size="sm"
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Start Sync
+              </Button>
+            )}
+          </div>
         </div>
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

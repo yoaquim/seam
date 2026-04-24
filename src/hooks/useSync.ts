@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-export type SyncStatus = "idle" | "running" | "done" | "error";
+export type SyncStatus = "idle" | "running" | "done" | "error" | "stopped";
 
 export interface SyncState {
   status: SyncStatus;
@@ -43,9 +43,7 @@ export function useSync() {
       setState((prev) => ({ ...prev, ...data }));
     });
 
-    es.onerror = () => {
-      // Connection lost — will auto-reconnect
-    };
+    es.onerror = () => {};
 
     return () => es.close();
   }, []);
@@ -59,5 +57,14 @@ export function useSync() {
     }
   }, [state.status]);
 
-  return { ...state, startSync };
+  const stopSync = useCallback(async () => {
+    if (state.status !== "running") return;
+    try {
+      await fetch(`${API}/api/sync`, { method: "DELETE" });
+    } catch (e) {
+      console.error("Failed to stop sync:", e);
+    }
+  }, [state.status]);
+
+  return { ...state, startSync, stopSync };
 }
