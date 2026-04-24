@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Users, Trash2 } from "lucide-react";
+import { tagClassName } from "@/lib/tag-colors";
 import type { Recording } from "@/types/recording";
 
 function formatDuration(seconds: number | null): string {
@@ -114,7 +115,7 @@ export function RecordingGridCard({ recording, onDelete }: RecordingGridCardProp
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
             {tags.map((tag) => (
-              <Badge key={tag} variant="outline" className="text-xs px-1.5 py-0">
+              <Badge key={tag} variant="secondary" className={`text-xs px-1.5 py-0 ${tagClassName(tag)}`}>
                 {tag}
               </Badge>
             ))}

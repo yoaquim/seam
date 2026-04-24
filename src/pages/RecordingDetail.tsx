@@ -23,6 +23,7 @@ import {
   Copy,
   Check,
 } from "lucide-react";
+import { tagClassName } from "@/lib/tag-colors";
 import type { TranscriptSegment } from "@/types/recording";
 
 const TABS = [
@@ -260,7 +261,7 @@ export function RecordingDetail() {
                 </Badge>
               )}
               {tags.map((tag) => (
-                <Badge key={tag} variant="outline" className="text-xs">
+                <Badge key={tag} variant="secondary" className={`text-xs ${tagClassName(tag)}`}>
                   {tag}
                 </Badge>
               ))}

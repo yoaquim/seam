@@ -19,6 +19,7 @@ import {
   Mic,
   Save,
 } from "lucide-react";
+import { tagClassName } from "@/lib/tag-colors";
 import type { Person } from "@/types/people";
 
 export function PeoplePage() {
@@ -170,19 +171,22 @@ export function PeoplePage() {
             >
               All ({people.length})
             </button>
-            {allTags.map((tag) => (
-              <button
-                key={tag}
-                onClick={() => setFilterTag(filterTag === tag ? "" : tag)}
-                className={`text-xs px-2 py-1 rounded border transition-colors cursor-pointer ${
-                  filterTag === tag
-                    ? "bg-foreground text-background border-foreground"
-                    : "bg-background text-muted-foreground border-border hover:border-foreground"
-                }`}
-              >
-                {tag} ({people.filter((p) => p.tags?.includes(tag)).length})
-              </button>
-            ))}
+            {allTags.map((tag) => {
+              const colors = tagClassName(tag);
+              return (
+                <button
+                  key={tag}
+                  onClick={() => setFilterTag(filterTag === tag ? "" : tag)}
+                  className={`text-xs px-2 py-1 rounded transition-colors cursor-pointer ${
+                    filterTag === tag
+                      ? "bg-foreground text-background border border-foreground"
+                      : `${colors} hover:opacity-80`
+                  }`}
+                >
+                  {tag} ({people.filter((p) => p.tags?.includes(tag)).length})
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -207,7 +211,7 @@ export function PeoplePage() {
                         <span className="text-xs text-muted-foreground">{person.role}</span>
                       )}
                       {person.tags?.map((tag) => (
-                        <Badge key={tag} variant="outline" className="text-xs px-1.5 py-0">
+                        <Badge key={tag} variant="secondary" className={`text-xs px-1.5 py-0 ${tagClassName(tag)}`}>
                           {tag}
                         </Badge>
                       ))}

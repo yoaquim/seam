@@ -7,6 +7,7 @@ import {
   Tag,
   Filter,
 } from "lucide-react";
+import { tagClassName } from "@/lib/tag-colors";
 import type { Recording } from "@/types/recording";
 
 export type SortField = "date" | "duration" | "title";
@@ -127,8 +128,8 @@ export function RecordingToolbar({
           {tags.map((tag) => (
             <Badge
               key={tag}
-              variant={filterTag === tag ? "default" : "outline"}
-              className="cursor-pointer text-xs"
+              variant={filterTag === tag ? "default" : "secondary"}
+              className={`cursor-pointer text-xs ${filterTag === tag ? "" : tagClassName(tag)}`}
               onClick={() => onFilterTagChange(filterTag === tag ? "" : tag)}
             >
               {tag}
