@@ -631,6 +631,11 @@ function TranscriptTab({ segments, speakerMap, people, dirName }: TranscriptTabP
       }
     }
 
+    const count = Object.keys(assignments).length;
+    if (!confirm(`Rename all ${count} segment${count !== 1 ? "s" : ""} from "${originalSpeaker}" to "${speaker}"?`)) {
+      return;
+    }
+
     // Update local state immediately
     setLocalSpeakerMap((prev) => ({ ...prev, ...assignments }));
 
