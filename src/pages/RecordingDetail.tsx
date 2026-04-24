@@ -620,27 +620,35 @@ function TranscriptTab({ segments, speakerMap, people, dirName }: TranscriptTabP
     ? resolvedSegments.filter((s) => s.speaker === speakerFilter)
     : resolvedSegments;
 
-  const handleAssignSpeaker = async (segmentIndex: number, speaker: string) => {
-    // Update ALL segments with the same speaker name across the entire transcript
-    const originalSpeaker = localSpeakerMap[String(segmentIndex)] || segments[segmentIndex]?.speaker || "Unknown";
-    const assignments: Record<number, string> = {};
+  // Pending speaker assignment — waiting for user to choose scope
+  const [pendingAssign, setPendingAssign] = useState<{
+    segmentIndex: number;
+    speaker: string;
+    originalSpeaker: string;
+    allCount: number;
+  } | null>(null);
 
+  const handleAssignSpeaker = async (segmentIndex: number, speaker: string) => {
+    const originalSpeaker = localSpeakerMap[String(segmentIndex)] || segments[segmentIndex]?.speaker || "Unknown";
+
+    // Count how many segments have this speaker
+    let allCount = 0;
     for (let j = 0; j < segments.length; j++) {
       const currentResolved = localSpeakerMap[String(j)] || segments[j].speaker || "Unknown";
-      if (currentResolved === originalSpeaker) {
-        assignments[j] = speaker;
-      }
+      if (currentResolved === originalSpeaker) allCount++;
     }
 
-    const count = Object.keys(assignments).length;
-    if (!confirm(`Rename all ${count} segment${count !== 1 ? "s" : ""} from "${originalSpeaker}" to "${speaker}"?`)) {
-      return;
+    if (allCount <= 1) {
+      // Only one segment — just do it
+      await applySpeakerAssignment({ [segmentIndex]: speaker });
+    } else {
+      // Ask user for scope
+      setPendingAssign({ segmentIndex, speaker, originalSpeaker, allCount });
     }
+  };
 
-    // Update local state immediately
+  const applySpeakerAssignment = async (assignments: Record<number, string>) => {
     setLocalSpeakerMap((prev) => ({ ...prev, ...assignments }));
-
-    // Persist to server
     try {
       await fetch(`http://localhost:3001/api/recordings/${dirName}/speakers`, {
         method: "PUT",
@@ -652,8 +660,55 @@ function TranscriptTab({ segments, speakerMap, people, dirName }: TranscriptTabP
     }
   };
 
+  const confirmAssignAll = async () => {
+    if (!pendingAssign) return;
+    const { originalSpeaker, speaker } = pendingAssign;
+    const assignments: Record<number, string> = {};
+    for (let j = 0; j < segments.length; j++) {
+      const currentResolved = localSpeakerMap[String(j)] || segments[j].speaker || "Unknown";
+      if (currentResolved === originalSpeaker) assignments[j] = speaker;
+    }
+    await applySpeakerAssignment(assignments);
+    setPendingAssign(null);
+  };
+
+  const confirmAssignOne = async () => {
+    if (!pendingAssign) return;
+    await applySpeakerAssignment({ [pendingAssign.segmentIndex]: pendingAssign.speaker });
+    setPendingAssign(null);
+  };
+
   return (
     <div>
+      {/* Speaker assignment confirmation */}
+      {pendingAssign && (
+        <div className="mb-4 p-3 rounded-lg border bg-muted/50 space-y-2">
+          <p className="text-sm">
+            Rename <strong>"{pendingAssign.originalSpeaker}"</strong> to <strong>"{pendingAssign.speaker}"</strong>?
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={confirmAssignAll}
+              className="text-xs px-3 py-1.5 rounded bg-foreground text-background cursor-pointer"
+            >
+              All {pendingAssign.allCount} segments
+            </button>
+            <button
+              onClick={confirmAssignOne}
+              className="text-xs px-3 py-1.5 rounded border border-border hover:bg-muted cursor-pointer"
+            >
+              Only this block
+            </button>
+            <button
+              onClick={() => setPendingAssign(null)}
+              className="text-xs px-3 py-1.5 rounded text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Speaker pills */}
       <div className="flex items-center gap-2 flex-wrap mb-4">
         <span className="text-xs text-muted-foreground">Speakers:</span>
