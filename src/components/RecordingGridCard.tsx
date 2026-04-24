@@ -75,7 +75,7 @@ export function RecordingGridCard({ recording, onDelete }: RecordingGridCardProp
                     onDelete(recording.dirName);
                   }
                 }}
-                className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer opacity-0 group-hover:opacity-100 p-0.5"
+                className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer p-0.5"
                 title="Delete recording"
               >
                 <Trash2 className="h-3.5 w-3.5" />

@@ -1,6 +1,23 @@
-# Seam
+<p align="center">
+  <img src="public/logo.svg" alt="Seam" width="60" />
+</p>
 
-Open-source companion for [Pocket AI](https://heypocketai.com). Pull your recordings via the API, analyze them with Claude, and browse everything in a local dashboard — no Pro subscription needed.
+<h1 align="center">Seam</h1>
+
+<p align="center">
+  Open-source companion for <a href="https://heypocketai.com">Pocket AI</a>.<br/>
+  Pull your recordings via the API, analyze them with Claude, and browse everything in a local dashboard — no Pro subscription needed.
+</p>
+
+## Screenshots
+
+| Home | Summary | Actions |
+|------|---------|---------|
+| ![Home](docs/screenshots/home.png) | ![Summary](docs/screenshots/detail-summary.png) | ![Actions](docs/screenshots/detail-actions.png) |
+
+| Transcript | Mind Map |
+|------------|----------|
+| ![Transcript](docs/screenshots/detail-transcript.png) | ![Mind Map](docs/screenshots/detail-mindmap.png) |
 
 ## What it does
 
