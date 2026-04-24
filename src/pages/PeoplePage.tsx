@@ -26,6 +26,7 @@ export function PeoplePage() {
   const { recordings } = useRecordings();
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState("");
+  const [newTags, setNewTags] = useState("");
   const [editing, setEditing] = useState<Person | null>(null);
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] = useState("");
@@ -49,9 +50,11 @@ export function PeoplePage() {
 
   const handleAdd = async () => {
     if (!newName.trim()) return;
-    await addPerson(newName, newRole || undefined);
+    const tags = newTags.split(",").map((t) => t.trim()).filter(Boolean);
+    await addPerson(newName, newRole || undefined, undefined, tags.length > 0 ? tags : undefined);
     setNewName("");
     setNewRole("");
+    setNewTags("");
   };
 
   const handleEdit = (person: Person) => {
@@ -123,6 +126,13 @@ export function PeoplePage() {
             placeholder="Role (optional)"
             value={newRole}
             onChange={(e) => setNewRole(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+            className="w-40"
+          />
+          <Input
+            placeholder="Tags (optional, comma-sep)"
+            value={newTags}
+            onChange={(e) => setNewTags(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             className="w-48"
           />

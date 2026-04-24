@@ -19,11 +19,11 @@ export function usePeople() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  const addPerson = useCallback(async (name: string, role?: string, notes?: string) => {
+  const addPerson = useCallback(async (name: string, role?: string, notes?: string, tags?: string[]) => {
     const res = await fetch(`${API}/api/people`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, role, notes }),
+      body: JSON.stringify({ name, role, notes, tags }),
     });
     if (res.ok) {
       const person = await res.json();
