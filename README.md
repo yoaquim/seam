@@ -44,7 +44,7 @@
 - **Node.js** 20+
 - **Python** 3.10+
 - **Claude Code** CLI (for analysis step) — [install](https://docs.anthropic.com/en/docs/claude-code)
-- **Pocket API key** — get from the Pocket app (Settings → API)
+- **Pocket API key** — get from [Pocket Settings → API Keys](https://app.heypocket.com/app/settings/api-keys)
 
 ## Quick start
 
