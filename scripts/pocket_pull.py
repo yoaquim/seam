@@ -296,6 +296,13 @@ def main():
 
     print(f"  Found {len(recordings)} recording(s)")
 
+    # Filter out pending recordings (not yet processed by Pocket)
+    ready = [r for r in recordings if r.get("state") != "pending"]
+    pending = len(recordings) - len(ready)
+    if pending:
+        print(f"  Skipping {pending} pending recording(s) (not yet processed by Pocket)")
+    recordings = ready
+
     # Fetch details and write each recording
     deleted = read_deleted()
     new_dirs = []
