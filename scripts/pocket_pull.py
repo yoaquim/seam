@@ -7,7 +7,9 @@ writes structured JSON + markdown to .seam/recordings/.
 
 import json
 import os
+import random
 import sys
+import time
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
@@ -18,8 +20,14 @@ DATA_DIR = ROOT / ".seam"
 RECORDINGS_DIR = DATA_DIR / "recordings"
 SYNC_FILE = ROOT / ".pocket-last-sync"
 DELETED_FILE = DATA_DIR / ".deleted"
+PENDING_FETCH_FILE = DATA_DIR / ".pending-fetch"
 
 BASE_URL = "https://public.heypocketai.com/api/v1"
+
+MAX_RETRIES = 5
+BACKOFF_BASE_SECONDS = 2.0
+BACKOFF_CAP_SECONDS = 60.0
+RETRY_STATUSES = {429, 500, 502, 503, 504}
 
 
 def read_deleted() -> set[str]:
@@ -45,6 +53,44 @@ def get_api_key() -> str:
     return key
 
 
+def _sleep_for_retry(attempt: int, retry_after: str | None) -> None:
+    """Sleep before a retry. Honor Retry-After header if present, otherwise
+    use exponential backoff with jitter, capped at BACKOFF_CAP_SECONDS."""
+    delay: float | None = None
+    if retry_after:
+        try:
+            delay = float(retry_after)
+        except ValueError:
+            delay = None
+    if delay is None:
+        delay = min(BACKOFF_BASE_SECONDS * (2 ** attempt), BACKOFF_CAP_SECONDS)
+        delay += random.uniform(0, delay * 0.25)
+    time.sleep(delay)
+
+
+def _request_with_retry(req: urllib.request.Request) -> dict:
+    """Open a request and parse JSON, retrying on 429 and 5xx with backoff."""
+    last_error: urllib.error.HTTPError | None = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            with urllib.request.urlopen(req) as resp:
+                return json.loads(resp.read().decode())
+        except urllib.error.HTTPError as e:
+            if e.code not in RETRY_STATUSES or attempt == MAX_RETRIES - 1:
+                raise
+            last_error = e
+            retry_after = e.headers.get("Retry-After") if e.headers else None
+            print(
+                f"    HTTP {e.code} on {req.full_url}, retrying "
+                f"(attempt {attempt + 1}/{MAX_RETRIES})...",
+                file=sys.stderr,
+            )
+            _sleep_for_retry(attempt, retry_after)
+    # Unreachable — final iteration either returns or re-raises.
+    assert last_error is not None
+    raise last_error
+
+
 def api_get(path: str, api_key: str, params: dict | None = None) -> dict:
     url = f"{BASE_URL}{path}"
     if params:
@@ -55,8 +101,7 @@ def api_get(path: str, api_key: str, params: dict | None = None) -> dict:
         "Authorization": f"Bearer {api_key}",
         "Accept": "application/json",
     })
-    with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read().decode())
+    return _request_with_retry(req)
 
 
 def api_post(path: str, api_key: str, body: dict) -> dict:
@@ -67,8 +112,7 @@ def api_post(path: str, api_key: str, body: dict) -> dict:
         "Content-Type": "application/json",
         "Accept": "application/json",
     })
-    with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read().decode())
+    return _request_with_retry(req)
 
 
 def get_last_sync() -> str | None:
@@ -80,6 +124,23 @@ def get_last_sync() -> str | None:
 
 def set_last_sync(ts: str):
     SYNC_FILE.write_text(ts + "\n")
+
+
+def read_pending_fetch() -> list[str]:
+    """Read recording IDs whose detail fetch failed on a prior run."""
+    if not PENDING_FETCH_FILE.exists():
+        return []
+    return [line.strip() for line in PENDING_FETCH_FILE.read_text().splitlines() if line.strip()]
+
+
+def write_pending_fetch(ids: list[str]) -> None:
+    """Persist recording IDs that still need to be fetched. Empties the file
+    when ids is empty so the next run has a clean slate."""
+    PENDING_FETCH_FILE.parent.mkdir(parents=True, exist_ok=True)
+    if ids:
+        PENDING_FETCH_FILE.write_text("\n".join(ids) + "\n")
+    elif PENDING_FETCH_FILE.exists():
+        PENDING_FETCH_FILE.unlink()
 
 
 def list_recordings(api_key: str, start_date: str | None = None) -> list[dict]:
@@ -289,6 +350,17 @@ def main():
     start_date = last_sync[:10] if last_sync else None
     recordings = list_recordings(api_key, start_date)
 
+    # Re-attempt any IDs that failed on prior runs, even if they fall outside
+    # the start_date window. The catalog returns metadata for these too, so we
+    # only need to ensure they're in the fetch loop — not duplicated.
+    pending_ids = read_pending_fetch()
+    seen_ids = {r.get("id") for r in recordings if r.get("id")}
+    missing_pending = [pid for pid in pending_ids if pid not in seen_ids]
+    if missing_pending:
+        print(f"  Re-attempting {len(missing_pending)} pending fetch(es) from prior run(s)")
+        for pid in missing_pending:
+            recordings.append({"id": pid, "title": f"(pending: {pid})"})
+
     if not recordings:
         print("  No new recordings found.")
         set_last_sync(datetime.now(timezone.utc).isoformat())
@@ -296,7 +368,8 @@ def main():
 
     print(f"  Found {len(recordings)} recording(s)")
 
-    # Filter out pending recordings (not yet processed by Pocket)
+    # Filter out pending recordings (not yet processed by Pocket).
+    # Stub entries from .pending-fetch have no "state" so they pass through.
     ready = [r for r in recordings if r.get("state") != "pending"]
     pending = len(recordings) - len(ready)
     if pending:
@@ -306,6 +379,7 @@ def main():
     # Fetch details and write each recording
     deleted = read_deleted()
     new_dirs = []
+    failed_ids: list[str] = []
     for rec in recordings:
         rec_id = rec.get("id")
         if not rec_id:
@@ -320,13 +394,20 @@ def main():
             new_dirs.append(dir_name)
         except urllib.error.HTTPError as e:
             print(f"    ERROR fetching {rec_id}: {e}", file=sys.stderr)
+            failed_ids.append(rec_id)
             continue
 
-    # Update sync timestamp
+    # Persist failures so the next run retries them regardless of watermark.
+    write_pending_fetch(failed_ids)
+
+    # Advance sync timestamp even on partial failure — pending-fetch is the
+    # safety net that keeps failed IDs in the next run's fetch list.
     now = datetime.now(timezone.utc).isoformat()
     set_last_sync(now)
 
     print(f"\nDone. Pulled {len(new_dirs)} recording(s).")
+    if failed_ids:
+        print(f"  {len(failed_ids)} fetch(es) failed; will retry next run.")
     print(f"Sync timestamp: {now}")
 
     # Write list of new dirs to stdout for the orchestration script

@@ -34,3 +34,6 @@ npm-debug.log*
 
 # Generated
 public/manifest.json
+
+# Claude Code
+.claude/*.local.json
