@@ -94,19 +94,31 @@ if [ ${#UNANALYZED[@]} -eq 0 ]; then
 else
     log "Found ${#UNANALYZED[@]} recording(s) missing analysis. (max $MAX_PARALLEL parallel)"
 
-    analyze_one() {
-        local dir_name="$1"
-        local REC_JSON="$RECORDINGS_DIR/$dir_name/recording.json"
-        local ANALYSIS_OUT_DIR="$ANALYSIS_DIR/$dir_name"
+    # Create a helper script for xargs to call (avoids issues with function export in bash 3.2)
+    ANALYZE_SCRIPT=$(mktemp)
+    cat > "$ANALYZE_SCRIPT" << 'ANALYZE_EOF'
+#!/usr/bin/env bash
+dir_name="$1"
+RECORDINGS_DIR="$2"
+ANALYSIS_DIR="$3"
+ANALYZE_PROMPT="$4"
+PEOPLE_DATA="$5"
+LOG_FILE="$6"
 
-        mkdir -p "$ANALYSIS_OUT_DIR"
+log() {
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*" | tee -a "$LOG_FILE"
+}
 
-        log "  Analyzing: $dir_name"
+REC_JSON="$RECORDINGS_DIR/$dir_name/recording.json"
+ANALYSIS_OUT_DIR="$ANALYSIS_DIR/$dir_name"
 
-        local RECORDING_DATA
-        RECORDING_DATA=$(cat "$REC_JSON")
+mkdir -p "$ANALYSIS_OUT_DIR"
 
-        claude -p "You are analyzing a Pocket AI recording. Output TWO files and nothing else.
+log "  Analyzing: $dir_name"
+
+RECORDING_DATA=$(cat "$REC_JSON")
+
+claude -p "You are analyzing a Pocket AI recording. Output TWO files and nothing else.
 
 $ANALYZE_PROMPT
 
@@ -128,31 +140,23 @@ Write the analysis markdown to: $ANALYSIS_OUT_DIR/analysis.md
 Write the structured JSON to: $ANALYSIS_OUT_DIR/analysis.json
 
 Use the Write tool to create both files. Do not output anything else." \
-            --allowedTools "Write" \
-            >> "$LOG_FILE" 2>&1
+    --allowedTools "Write" \
+    >> "$LOG_FILE" 2>&1
 
-        # Verify analysis was created
-        if [ -f "$ANALYSIS_OUT_DIR/analysis.json" ]; then
-            log "  Done: $dir_name"
-        else
-            log "  FAILED: $dir_name (analysis.json not created)"
-        fi
-    }
+# Verify analysis was created
+if [ -f "$ANALYSIS_OUT_DIR/analysis.json" ]; then
+    log "  Done: $dir_name"
+else
+    log "  FAILED: $dir_name (analysis.json not created)"
+fi
+ANALYZE_EOF
+    chmod +x "$ANALYZE_SCRIPT"
 
-    RUNNING=0
-    for dir_name in "${UNANALYZED[@]}"; do
-        analyze_one "$dir_name" &
-        RUNNING=$((RUNNING + 1))
+    # Use xargs -P for proper parallelism (works on bash 3.2 / macOS)
+    printf '%s\n' "${UNANALYZED[@]}" | xargs -P "$MAX_PARALLEL" -I {} \
+        bash "$ANALYZE_SCRIPT" {} "$RECORDINGS_DIR" "$ANALYSIS_DIR" "$ANALYZE_PROMPT" "$PEOPLE_DATA" "$LOG_FILE"
 
-        # Wait for a slot if we hit the limit
-        if [ "$RUNNING" -ge "$MAX_PARALLEL" ]; then
-            wait -n 2>/dev/null || wait  # wait -n waits for any one job (bash 4.3+)
-            RUNNING=$((RUNNING - 1))
-        fi
-    done
-
-    # Wait for remaining jobs
-    wait
+    rm -f "$ANALYZE_SCRIPT"
     log "All analysis jobs complete."
 fi
 
