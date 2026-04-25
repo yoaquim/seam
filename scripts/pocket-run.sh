@@ -163,7 +163,11 @@ fi
 # Clean up old manifest if it exists
 rm -f "$ROOT/.seam/.last-pull-manifest"
 
-# ── Phase 3: Rebuild dashboard manifest ───────────────────────
+# ── Phase 3: Stage inferred speakers for review ──────────────
+log "Staging inferred speakers..."
+python3 -u "$SCRIPT_DIR/stage-people.py" 2>&1 | tee -a "$LOG_FILE"
+
+# ── Phase 4: Rebuild dashboard manifest ───────────────────────
 log "Rebuilding dashboard manifest..."
 python3 -u "$SCRIPT_DIR/build-manifest.py" 2>&1 | tee -a "$LOG_FILE"
 

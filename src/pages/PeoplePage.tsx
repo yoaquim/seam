@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { usePeople } from "@/hooks/usePeople";
+import { usePendingPeople } from "@/hooks/usePendingPeople";
 import { useRecordings } from "@/hooks/useRecordings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,13 +19,19 @@ import {
   Users,
   Mic,
   Save,
+  CheckCircle2,
+  GitMerge,
+  XCircle,
+  AlertCircle,
 } from "lucide-react";
 import { tagClassName } from "@/lib/tag-colors";
 import type { Person } from "@/types/people";
 
 export function PeoplePage() {
-  const { people, addPerson, updatePerson, deletePerson } = usePeople();
+  const { people, addPerson, updatePerson, deletePerson, refresh: refreshPeople } = usePeople();
+  const { pending, confirm: confirmPending, merge: mergePending, dismiss: dismissPending } = usePendingPeople();
   const { recordings } = useRecordings();
+  const [mergeTarget, setMergeTarget] = useState<string | null>(null); // pending person id being merged
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState("");
   const [newTags, setNewTags] = useState("");
@@ -127,6 +134,89 @@ export function PeoplePage() {
             {people.length} people — used for speaker inference in transcript analysis
           </p>
         </div>
+
+        {/* Pending speakers */}
+        {pending.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <h2 className="text-sm font-semibold">
+                {pending.length} new speaker{pending.length !== 1 ? "s" : ""} detected
+              </h2>
+            </div>
+            <div className="space-y-2">
+              {pending.map((p) => (
+                <Card key={p.id} className="border-amber-200 bg-amber-50/30">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium">{p.name}</span>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          {p.count} mention{p.count !== 1 ? "s" : ""} in {p.seenIn.length} recording{p.seenIn.length !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-green-700 hover:text-green-800 hover:bg-green-50"
+                          onClick={async () => {
+                            await confirmPending(p.id);
+                            refreshPeople();
+                          }}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Confirm
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1"
+                          onClick={() => setMergeTarget(mergeTarget === p.id ? null : p.id)}
+                        >
+                          <GitMerge className="h-3.5 w-3.5" />
+                          Merge
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-muted-foreground hover:text-destructive"
+                          onClick={() => dismissPending(p.id)}
+                        >
+                          <XCircle className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    {/* Merge picker — shows when Merge is clicked */}
+                    {mergeTarget === p.id && (
+                      <div className="mt-3 pt-3 border-t">
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Merge "{p.name}" as alias of:
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {people.map((person) => (
+                            <button
+                              key={person.id}
+                              onClick={async () => {
+                                await mergePending(p.id, person.id);
+                                refreshPeople();
+                                setMergeTarget(null);
+                              }}
+                              className="text-xs px-2 py-1 rounded border border-border hover:bg-foreground hover:text-background transition-colors cursor-pointer"
+                            >
+                              {person.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <Separator className="mt-6" />
+          </div>
+        )}
 
         {/* Add person */}
         <div className="flex gap-2 mb-6">
