@@ -235,6 +235,8 @@ app.get("/api/sync/history", (_req, res) => {
 // ── People API ───────────────────────────────────────────────
 
 const PEOPLE_FILE = path.join(ROOT, ".seam", "people.json");
+const PENDING_PEOPLE_FILE = path.join(ROOT, ".seam", "people-pending.json");
+const DISMISSED_FILE = path.join(ROOT, ".seam", "dismissed-speakers.txt");
 
 interface Person {
   id: string;
@@ -319,6 +321,115 @@ app.delete("/api/people/:id", (req, res) => {
     return;
   }
   writePeople(filtered);
+  res.json({ ok: true });
+});
+
+// ── Pending People (staging) ─────────────────────────────────
+
+interface PendingPerson {
+  id: string;
+  name: string;
+  seenIn: string[];
+  count: number;
+  suggestedMatch: string | null;
+  createdAt: string;
+}
+
+function readPending(): PendingPerson[] {
+  try {
+    if (existsSync(PENDING_PEOPLE_FILE)) {
+      return JSON.parse(readFileSync(PENDING_PEOPLE_FILE, "utf-8")).pending || [];
+    }
+  } catch {}
+  return [];
+}
+
+function writePending(pending: PendingPerson[]) {
+  if (pending.length === 0) {
+    try { if (existsSync(PENDING_PEOPLE_FILE)) require("fs").unlinkSync(PENDING_PEOPLE_FILE); } catch {}
+    return;
+  }
+  writeFileSync(PENDING_PEOPLE_FILE, JSON.stringify({ pending }, null, 2) + "\n");
+}
+
+function addDismissed(name: string) {
+  const existing = existsSync(DISMISSED_FILE) ? readFileSync(DISMISSED_FILE, "utf-8") : "";
+  const names = new Set(existing.trim().split("\n").filter(Boolean));
+  names.add(name.toLowerCase());
+  writeFileSync(DISMISSED_FILE, [...names].join("\n") + "\n");
+}
+
+// List pending speakers
+app.get("/api/people/pending", (_req, res) => {
+  res.json({ pending: readPending() });
+});
+
+// Confirm — move from pending to people.json as a new person
+app.post("/api/people/pending/:id/confirm", (_req, res) => {
+  const pending = readPending();
+  const idx = pending.findIndex((p) => p.id === _req.params.id);
+  if (idx === -1) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const entry = pending[idx];
+  const people = readPeople();
+  const person: Person = {
+    id: randomUUID(),
+    name: entry.name,
+    source: "inferred",
+    createdAt: new Date().toISOString(),
+  };
+  people.push(person);
+  writePeople(people);
+  pending.splice(idx, 1);
+  writePending(pending);
+  res.json(person);
+});
+
+// Merge — add as alias to an existing person, remove from pending
+app.post("/api/people/pending/:id/merge", (req, res) => {
+  const { targetPersonId } = req.body as { targetPersonId: string };
+  if (!targetPersonId) {
+    res.status(400).json({ error: "targetPersonId required" });
+    return;
+  }
+  const pending = readPending();
+  const idx = pending.findIndex((p) => p.id === req.params.id);
+  if (idx === -1) {
+    res.status(404).json({ error: "Pending person not found" });
+    return;
+  }
+  const entry = pending[idx];
+  const people = readPeople();
+  const target = people.find((p) => p.id === targetPersonId);
+  if (!target) {
+    res.status(404).json({ error: "Target person not found" });
+    return;
+  }
+  // Add as alias
+  if (!target.aliases) target.aliases = [];
+  if (!target.aliases.some((a) => a.toLowerCase() === entry.name.toLowerCase())) {
+    target.aliases.push(entry.name);
+  }
+  writePeople(people);
+  pending.splice(idx, 1);
+  writePending(pending);
+  res.json(target);
+});
+
+// Dismiss — remove from pending, add to exclusion list
+app.post("/api/people/pending/:id/dismiss", (req, res) => {
+  const pending = readPending();
+  const idx = pending.findIndex((p) => p.id === req.params.id);
+  if (idx === -1) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const entry = pending[idx];
+  addDismissed(entry.name);
+  pending.splice(idx, 1);
+  writePending(pending);
   res.json({ ok: true });
 });
 
