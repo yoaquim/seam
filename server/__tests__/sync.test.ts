@@ -1,9 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
 import express from "express";
 import cors from "cors";
-import { spawn } from "child_process";
-import { EventEmitter } from "events";
 
 // Minimal app that mirrors server/index.ts sync logic
 function createApp() {

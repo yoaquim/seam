@@ -55,7 +55,9 @@ export default function App() {
           ...(r.analysis?.decisions?.map((d) => d.decision) || []),
           ...(r.analysis?.key_quotes?.map((kq) => kq.text) || []),
           ...(r.data.transcript?.map((s) => s.text) || []),
-        ].join(" ").toLowerCase();
+        ]
+          .join(" ")
+          .toLowerCase();
         return searchable.includes(q);
       });
     }
@@ -80,8 +82,7 @@ export default function App() {
           <AlertCircle className="h-8 w-8 text-destructive mx-auto" />
           <p className="text-sm text-muted-foreground">{error}</p>
           <p className="text-xs text-muted-foreground">
-            Run <code>python3 scripts/build-manifest.py</code> to generate the
-            dashboard data.
+            Run <code>python3 scripts/build-manifest.py</code> to generate the dashboard data.
           </p>
         </div>
       </div>
@@ -106,10 +107,7 @@ export default function App() {
             { label: "Action Items", value: stats.totalActions },
             { label: "Open Questions", value: stats.openQuestions },
           ].map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-lg border bg-[#2b2b2b] p-4 text-center"
-            >
+            <div key={stat.label} className="rounded-lg border bg-[#2b2b2b] p-4 text-center">
               <div className="text-2xl font-bold text-white">{stat.value}</div>
               <div className="text-xs text-[#a3a3a3]">{stat.label}</div>
             </div>
@@ -125,8 +123,11 @@ export default function App() {
             sortDir={sortDir}
             filterType={filterType}
             filterTag={filterTag}
-            onSortFieldChange={(f) => { setSortField(f); setSortDir("desc"); }}
-            onSortDirToggle={() => setSortDir((d) => d === "asc" ? "desc" : "asc")}
+            onSortFieldChange={(f) => {
+              setSortField(f);
+              setSortDir("desc");
+            }}
+            onSortDirToggle={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
             onFilterTypeChange={setFilterType}
             onFilterTagChange={setFilterTag}
           />
@@ -159,7 +160,9 @@ export default function App() {
                         key={recording.dirName}
                         recording={recording}
                         onDelete={async (dirName) => {
-                          await fetch(`http://localhost:3001/api/recordings/${dirName}`, { method: "DELETE" });
+                          await fetch(`http://localhost:3001/api/recordings/${dirName}`, {
+                            method: "DELETE",
+                          });
                           window.location.reload();
                         }}
                       />

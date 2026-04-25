@@ -55,7 +55,9 @@ function createApp(dataDir: string) {
 
   function writePending(pending: PendingPerson[]) {
     if (pending.length === 0) {
-      try { if (existsSync(PENDING_FILE)) unlinkSync(PENDING_FILE); } catch {}
+      try {
+        if (existsSync(PENDING_FILE)) unlinkSync(PENDING_FILE);
+      } catch {}
       return;
     }
     writeFileSync(PENDING_FILE, JSON.stringify({ pending }, null, 2) + "\n");
@@ -75,7 +77,10 @@ function createApp(dataDir: string) {
   app.post("/api/people/pending/:id/confirm", (req, res) => {
     const pending = readPending();
     const idx = pending.findIndex((p) => p.id === req.params.id);
-    if (idx === -1) { res.status(404).json({ error: "Not found" }); return; }
+    if (idx === -1) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
     const entry = pending[idx];
     const people = readPeople();
     const person: Person = {
@@ -93,14 +98,23 @@ function createApp(dataDir: string) {
 
   app.post("/api/people/pending/:id/merge", (req, res) => {
     const { targetPersonId } = req.body;
-    if (!targetPersonId) { res.status(400).json({ error: "targetPersonId required" }); return; }
+    if (!targetPersonId) {
+      res.status(400).json({ error: "targetPersonId required" });
+      return;
+    }
     const pending = readPending();
     const idx = pending.findIndex((p) => p.id === req.params.id);
-    if (idx === -1) { res.status(404).json({ error: "Pending not found" }); return; }
+    if (idx === -1) {
+      res.status(404).json({ error: "Pending not found" });
+      return;
+    }
     const entry = pending[idx];
     const people = readPeople();
     const target = people.find((p) => p.id === targetPersonId);
-    if (!target) { res.status(404).json({ error: "Target not found" }); return; }
+    if (!target) {
+      res.status(404).json({ error: "Target not found" });
+      return;
+    }
     if (!target.aliases) target.aliases = [];
     if (!target.aliases.some((a) => a.toLowerCase() === entry.name.toLowerCase())) {
       target.aliases.push(entry.name);
@@ -114,7 +128,10 @@ function createApp(dataDir: string) {
   app.post("/api/people/pending/:id/dismiss", (req, res) => {
     const pending = readPending();
     const idx = pending.findIndex((p) => p.id === req.params.id);
-    if (idx === -1) { res.status(404).json({ error: "Not found" }); return; }
+    if (idx === -1) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
     const entry = pending[idx];
     addDismissed(entry.name);
     pending.splice(idx, 1);

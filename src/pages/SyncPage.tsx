@@ -3,11 +3,7 @@ import { useSync } from "@/hooks/useSync";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   RefreshCw,
   CheckCircle2,
@@ -71,7 +67,9 @@ function LogViewer({ logs }: { logs: string[] }) {
                   ? "text-[#569cd6] font-bold"
                   : line.includes("ERROR")
                     ? "text-red-400"
-                    : line.includes("Done") || line.includes("completed") || line.includes("successfully")
+                    : line.includes("Done") ||
+                        line.includes("completed") ||
+                        line.includes("successfully")
                       ? "text-green-400"
                       : ""
             }
@@ -120,9 +118,10 @@ function LiveSync({ sync }: { sync: ReturnType<typeof useSync> }) {
           {sync.startedAt && (
             <span className="text-xs text-muted-foreground">
               Started {formatDate(sync.startedAt)}
-              {sync.finishedAt && ` — ${formatDuration(
-                new Date(sync.finishedAt).getTime() - new Date(sync.startedAt).getTime()
-              )}`}
+              {sync.finishedAt &&
+                ` — ${formatDuration(
+                  new Date(sync.finishedAt).getTime() - new Date(sync.startedAt).getTime(),
+                )}`}
             </span>
           )}
         </div>
@@ -142,7 +141,9 @@ function LiveSync({ sync }: { sync: ReturnType<typeof useSync> }) {
                         ? "text-[#569cd6] font-bold"
                         : line.includes("ERROR")
                           ? "text-red-400"
-                          : line.includes("Done") || line.includes("completed") || line.includes("successfully")
+                          : line.includes("Done") ||
+                              line.includes("completed") ||
+                              line.includes("successfully")
                             ? "text-green-400"
                             : ""
                   }
@@ -181,15 +182,14 @@ function HistoryEntry({ entry }: { entry: SyncHistoryEntry }) {
             )}
             <div className="flex-1 text-left">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">
-                  {formatDate(entry.startedAt)}
-                </span>
+                <span className="text-sm font-medium">{formatDate(entry.startedAt)}</span>
                 <Badge variant="secondary" className="text-xs">
                   {formatDuration(entry.durationMs)}
                 </Badge>
                 {entry.recordingsPulled > 0 && (
                   <span className="text-xs text-muted-foreground">
-                    {entry.recordingsPulled} recording{entry.recordingsPulled !== 1 ? "s" : ""} pulled
+                    {entry.recordingsPulled} recording{entry.recordingsPulled !== 1 ? "s" : ""}{" "}
+                    pulled
                   </span>
                 )}
               </div>
@@ -229,7 +229,9 @@ export function SyncPage() {
       .catch(() => setLoadingHistory(false));
   };
 
-  useEffect(() => { fetchHistory(); }, []);
+  useEffect(() => {
+    fetchHistory();
+  }, []);
 
   // Refresh history when a sync completes
   useEffect(() => {
@@ -240,9 +242,10 @@ export function SyncPage() {
 
   const successCount = history.filter((e) => e.status === "done").length;
   const errorCount = history.filter((e) => e.status === "error").length;
-  const avgDuration = history.length > 0
-    ? Math.round(history.reduce((s, e) => s + e.durationMs, 0) / history.length / 1000)
-    : 0;
+  const avgDuration =
+    history.length > 0
+      ? Math.round(history.reduce((s, e) => s + e.durationMs, 0) / history.length / 1000)
+      : 0;
 
   return (
     <div className="min-h-full bg-background">
@@ -254,9 +257,7 @@ export function SyncPage() {
               Sync
             </h1>
             <p className="text-xs text-muted-foreground">
-              {sync.lastSyncedAt
-                ? `Last synced ${formatDate(sync.lastSyncedAt)}`
-                : "Never synced"}
+              {sync.lastSyncedAt ? `Last synced ${formatDate(sync.lastSyncedAt)}` : "Never synced"}
             </p>
           </div>
           <div className="flex gap-2">
@@ -270,11 +271,7 @@ export function SyncPage() {
                 Stop
               </Button>
             ) : (
-              <Button
-                onClick={sync.startSync}
-                size="sm"
-                className="gap-2"
-              >
+              <Button onClick={sync.startSync} size="sm" className="gap-2">
                 <RefreshCw className="h-4 w-4" />
                 Start Sync
               </Button>

@@ -209,7 +209,7 @@ app.delete("/api/sync", (_req, res) => {
   }
 
   state.status = "stopped";
-  appendSyncHistory; // status change triggers cleanup in the close handler
+  // status change triggers cleanup in the close handler
 
   // Kill the process tree
   syncProc.kill("SIGTERM");
@@ -285,8 +285,12 @@ app.post("/api/people", (req, res) => {
     name: name.trim(),
     role: role?.trim() || undefined,
     notes: notes?.trim() || undefined,
-    aliases: Array.isArray(aliases) ? aliases.map((a: string) => a.trim()).filter(Boolean) : undefined,
-    tags: Array.isArray(personTags) ? personTags.map((t: string) => t.trim()).filter(Boolean) : undefined,
+    aliases: Array.isArray(aliases)
+      ? aliases.map((a: string) => a.trim()).filter(Boolean)
+      : undefined,
+    tags: Array.isArray(personTags)
+      ? personTags.map((t: string) => t.trim()).filter(Boolean)
+      : undefined,
     source: "manual",
     createdAt: new Date().toISOString(),
   };
@@ -306,9 +310,15 @@ app.put("/api/people/:id", (req, res) => {
   if (name) people[idx].name = name.trim();
   if (role !== undefined) people[idx].role = role?.trim() || undefined;
   if (notes !== undefined) people[idx].notes = notes?.trim() || undefined;
-  if (aliases !== undefined) people[idx].aliases = Array.isArray(aliases) ? aliases.map((a: string) => a.trim()).filter(Boolean) : undefined;
+  if (aliases !== undefined)
+    people[idx].aliases = Array.isArray(aliases)
+      ? aliases.map((a: string) => a.trim()).filter(Boolean)
+      : undefined;
   const { tags: personTags } = req.body;
-  if (personTags !== undefined) people[idx].tags = Array.isArray(personTags) ? personTags.map((t: string) => t.trim()).filter(Boolean) : undefined;
+  if (personTags !== undefined)
+    people[idx].tags = Array.isArray(personTags)
+      ? personTags.map((t: string) => t.trim()).filter(Boolean)
+      : undefined;
   writePeople(people);
   res.json(people[idx]);
 });
@@ -346,7 +356,9 @@ function readPending(): PendingPerson[] {
 
 function writePending(pending: PendingPerson[]) {
   if (pending.length === 0) {
-    try { if (existsSync(PENDING_PEOPLE_FILE)) require("fs").unlinkSync(PENDING_PEOPLE_FILE); } catch {}
+    try {
+      if (existsSync(PENDING_PEOPLE_FILE)) require("fs").unlinkSync(PENDING_PEOPLE_FILE);
+    } catch {}
     return;
   }
   writeFileSync(PENDING_PEOPLE_FILE, JSON.stringify({ pending }, null, 2) + "\n");

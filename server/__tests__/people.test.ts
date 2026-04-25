@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import express from "express";
-import { writeFileSync, existsSync, unlinkSync, mkdirSync } from "fs";
+import { writeFileSync, existsSync, unlinkSync } from "fs";
 import { randomUUID } from "crypto";
 import path from "path";
 import os from "os";
@@ -112,9 +112,7 @@ describe("People API", () => {
   });
 
   it("POST /api/people creates a person", async () => {
-    const res = await request(app)
-      .post("/api/people")
-      .send({ name: "Alice", role: "Engineer" });
+    const res = await request(app).post("/api/people").send({ name: "Alice", role: "Engineer" });
     expect(res.status).toBe(201);
     expect(res.body.name).toBe("Alice");
     expect(res.body.role).toBe("Engineer");
@@ -137,18 +135,14 @@ describe("People API", () => {
     const create = await request(app).post("/api/people").send({ name: "Bob" });
     const id = create.body.id;
 
-    const res = await request(app)
-      .put(`/api/people/${id}`)
-      .send({ name: "Robert", role: "Lead" });
+    const res = await request(app).put(`/api/people/${id}`).send({ name: "Robert", role: "Lead" });
     expect(res.status).toBe(200);
     expect(res.body.name).toBe("Robert");
     expect(res.body.role).toBe("Lead");
   });
 
   it("PUT /api/people/:id returns 404 for unknown id", async () => {
-    const res = await request(app)
-      .put("/api/people/nonexistent")
-      .send({ name: "X" });
+    const res = await request(app).put("/api/people/nonexistent").send({ name: "X" });
     expect(res.status).toBe(404);
   });
 

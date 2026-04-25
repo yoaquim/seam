@@ -10,13 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import {
-  RefreshCw,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Terminal,
-} from "lucide-react";
+import { RefreshCw, CheckCircle2, XCircle, Clock, Terminal } from "lucide-react";
 import type { SyncStatus } from "@/hooks/useSync";
 
 function formatTime(iso: string | null): string {
@@ -30,7 +24,12 @@ function formatTime(iso: string | null): string {
   if (diffMin < 60) return `${diffMin}m ago`;
   const diffHr = Math.floor(diffMin / 60);
   if (diffHr < 24) return `${diffHr}h ago`;
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function StatusBadge({ status }: { status: SyncStatus }) {
@@ -100,18 +99,8 @@ export function SyncPanel({
 
   return (
     <Dialog>
-      <DialogTrigger
-        render={
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-          />
-        }
-      >
-        <RefreshCw
-          className={`h-4 w-4 ${status === "running" ? "animate-spin" : ""}`}
-        />
+      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2" />}>
+        <RefreshCw className={`h-4 w-4 ${status === "running" ? "animate-spin" : ""}`} />
         Sync
         {status === "running" && (
           <span className="relative flex h-2 w-2">
@@ -188,15 +177,8 @@ export function SyncPanel({
 
         {/* Sync button */}
         <div className="flex justify-end">
-          <Button
-            onClick={onSync}
-            disabled={status === "running"}
-            size="sm"
-            className="gap-2"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${status === "running" ? "animate-spin" : ""}`}
-            />
+          <Button onClick={onSync} disabled={status === "running"} size="sm" className="gap-2">
+            <RefreshCw className={`h-4 w-4 ${status === "running" ? "animate-spin" : ""}`} />
             {status === "running" ? "Syncing..." : "Start Sync"}
           </Button>
         </div>
