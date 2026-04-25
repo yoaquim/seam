@@ -82,6 +82,6 @@ Tests must pass before committing. No feature code without tests.
 ### Git
 
 - No direct pushes to main — PRs only
-- Tests must pass before merge
+- Pre-commit hook (husky) runs `npm test` — blocks commit if tests fail
 - Branches: `feature/`, `fix/`, `chore/`
 - Commit messages: imperative, describe the "what" and "why"
