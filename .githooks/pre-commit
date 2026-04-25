@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Pre-commit hook: build + test must pass before committing
+
+echo "Running build check..."
+npm run build 2>&1 | tail -1
+if [ $? -ne 0 ]; then
+    echo "Build failed. Fix errors before committing."
+    exit 1
+fi
+
+echo "Running tests..."
+npm test 2>&1 | tail -5
+if [ $? -ne 0 ]; then
+    echo "Tests failed. Fix them before committing."
+    exit 1
+fi
+
+echo "All checks passed."
