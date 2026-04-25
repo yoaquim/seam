@@ -49,7 +49,7 @@ describe("Speakers API", () => {
           { speaker: "Unknown", text: "Hi there", start: 3, end: 5 },
           { speaker: "Unknown", text: "How are you?", start: 6, end: 8 },
         ],
-      })
+      }),
     );
     app = createApp(tmpDir);
   });
@@ -67,8 +67,8 @@ describe("Speakers API", () => {
     const data = JSON.parse(
       require("fs").readFileSync(
         path.join(tmpDir, "recordings", "2026-04-22_test", "recording.json"),
-        "utf-8"
-      )
+        "utf-8",
+      ),
     );
     expect(data.transcript[0].speaker).toBe("Alice");
     expect(data.transcript[1].speaker).toBe("Bob");
@@ -91,8 +91,8 @@ describe("Speakers API", () => {
     const data = JSON.parse(
       require("fs").readFileSync(
         path.join(tmpDir, "recordings", "2026-04-22_test", "recording.json"),
-        "utf-8"
-      )
+        "utf-8",
+      ),
     );
     // All still Unknown
     expect(data.transcript.every((s: any) => s.speaker === "Unknown")).toBe(true);

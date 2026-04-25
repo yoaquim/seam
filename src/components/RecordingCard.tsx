@@ -1,17 +1,7 @@
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -51,23 +41,16 @@ function formatTimestamp(seconds: number): string {
 }
 
 function TranscriptView({ segments }: { segments: TranscriptSegment[] }) {
-  let currentSpeaker: string | null = null;
-
   return (
     <div className="space-y-3">
       {segments.map((seg, i) => {
-        const showSpeaker = seg.speaker !== currentSpeaker;
-        currentSpeaker = seg.speaker;
+        const showSpeaker = i === 0 || seg.speaker !== segments[i - 1].speaker;
         return (
           <div key={i}>
             {showSpeaker && (
               <div className="flex items-center gap-2 mt-2 mb-1">
-                <span className="text-xs font-semibold text-foreground">
-                  {seg.speaker}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {formatTimestamp(seg.start)}
-                </span>
+                <span className="text-xs font-semibold text-foreground">{seg.speaker}</span>
+                <span className="text-xs text-muted-foreground">{formatTimestamp(seg.start)}</span>
               </div>
             )}
             <p className="text-sm text-muted-foreground leading-relaxed pl-2 border-l-2 border-muted">
@@ -83,14 +66,10 @@ function TranscriptView({ segments }: { segments: TranscriptSegment[] }) {
 function getTypeColor(type: string): string {
   const colors: Record<string, string> = {
     meeting: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-    brainstorm:
-      "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
-    interview:
-      "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-    lecture:
-      "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
-    conversation:
-      "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+    brainstorm: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+    interview: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+    lecture: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+    conversation: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
   };
   return colors[type] || colors.conversation;
 }
@@ -100,61 +79,53 @@ interface RecordingCardProps {
   onOpenMindMap: (recording: Recording) => void;
 }
 
-export function RecordingCard({
-  recording,
-  onOpenMindMap,
-}: RecordingCardProps) {
+export function RecordingCard({ recording, onOpenMindMap }: RecordingCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { data, analysis } = recording;
   const date = data.created_at?.slice(0, 10) || "Unknown";
-  const tags = (data.tags || []).map((t) =>
-    typeof t === "string" ? t : t.name
-  );
+  const tags = (data.tags || []).map((t) => (typeof t === "string" ? t : t.name));
 
   return (
     <Card className="transition-shadow hover:shadow-md">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger render={<CardHeader />} className="cursor-pointer select-none">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  {isOpen ? (
-                    <ChevronDown className="h-4 w-4 shrink-0" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 shrink-0" />
-                  )}
-                  {data.title}
-                </CardTitle>
-                <CardDescription className="mt-1 flex items-center gap-3 flex-wrap">
-                  <span>{date}</span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {formatDuration(data.duration)}
-                  </span>
-                  {analysis?.participants && analysis.participants.length > 0 && (
-                    <span className="flex items-center gap-1">
-                      <Users className="h-3 w-3" />
-                      {analysis.participants.length}
-                    </span>
-                  )}
-                </CardDescription>
-              </div>
-              <div className="flex gap-2 shrink-0 flex-wrap justify-end">
-                {analysis?.type && (
-                  <Badge
-                    variant="secondary"
-                    className={getTypeColor(analysis.type)}
-                  >
-                    {analysis.type}
-                  </Badge>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-lg flex items-center gap-2">
+                {isOpen ? (
+                  <ChevronDown className="h-4 w-4 shrink-0" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 shrink-0" />
                 )}
-                {tags.map((tag) => (
-                  <Badge key={tag} variant="outline">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
+                {data.title}
+              </CardTitle>
+              <CardDescription className="mt-1 flex items-center gap-3 flex-wrap">
+                <span>{date}</span>
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {formatDuration(data.duration)}
+                </span>
+                {analysis?.participants && analysis.participants.length > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    {analysis.participants.length}
+                  </span>
+                )}
+              </CardDescription>
             </div>
+            <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+              {analysis?.type && (
+                <Badge variant="secondary" className={getTypeColor(analysis.type)}>
+                  {analysis.type}
+                </Badge>
+              )}
+              {tags.map((tag) => (
+                <Badge key={tag} variant="outline">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
         </CollapsibleTrigger>
 
         <CollapsibleContent>
@@ -174,10 +145,7 @@ export function RecordingCard({
                 <h4 className="text-sm font-semibold mb-2">Key Takeaways</h4>
                 <ul className="space-y-1">
                   {analysis.takeaways.map((t, i) => (
-                    <li
-                      key={i}
-                      className="text-sm text-muted-foreground flex items-start gap-2"
-                    >
+                    <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
                       <span className="text-primary mt-0.5">•</span>
                       {t}
                     </li>
@@ -196,10 +164,7 @@ export function RecordingCard({
                   </h4>
                   <ul className="space-y-1.5">
                     {analysis.action_items.map((item, i) => (
-                      <li
-                        key={i}
-                        className="text-sm flex items-start gap-2"
-                      >
+                      <li key={i} className="text-sm flex items-start gap-2">
                         {item.completed ? (
                           <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
                         ) : (
@@ -208,10 +173,7 @@ export function RecordingCard({
                         <span>
                           {item.task}
                           {item.owner && (
-                            <span className="text-muted-foreground">
-                              {" "}
-                              — {item.owner}
-                            </span>
+                            <span className="text-muted-foreground"> — {item.owner}</span>
                           )}
                         </span>
                       </li>
@@ -228,10 +190,7 @@ export function RecordingCard({
                     {analysis.decisions.map((d, i) => (
                       <li key={i} className="text-sm">
                         <span className="font-medium">{d.decision}</span>
-                        <span className="text-muted-foreground">
-                          {" "}
-                          — {d.by}
-                        </span>
+                        <span className="text-muted-foreground"> — {d.by}</span>
                       </li>
                     ))}
                   </ul>
@@ -248,10 +207,7 @@ export function RecordingCard({
                 </h4>
                 <ul className="space-y-1">
                   {analysis.open_questions.map((q, i) => (
-                    <li
-                      key={i}
-                      className="text-sm text-muted-foreground flex items-start gap-2"
-                    >
+                    <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
                       <span className="text-orange-500 mt-0.5">?</span>
                       {q}
                     </li>
@@ -274,9 +230,7 @@ export function RecordingCard({
                       className="text-sm border-l-2 border-muted pl-3 italic text-muted-foreground"
                     >
                       "{q.text}"
-                      <span className="not-italic block text-xs mt-0.5">
-                        — {q.speaker}
-                      </span>
+                      <span className="not-italic block text-xs mt-0.5">— {q.speaker}</span>
                     </blockquote>
                   ))}
                 </div>

@@ -49,15 +49,18 @@ Red-green-refactor for all implementation tasks:
 Tests must pass before committing. No feature code without tests.
 
 **Test types:**
+
 - Unit: individual functions in isolation (vitest for TS, pytest for Python)
 - Integration: API endpoints with supertest
 - Component: React Testing Library (behavior, not implementation)
 
 **File placement:**
+
 - TypeScript: `server/__tests__/`, `src/components/__tests__/`, `src/hooks/__tests__/`
 - Python: `scripts/tests/`
 
 **Coverage targets:**
+
 - 80%+ on new code
 - Critical paths (sync, people CRUD, speaker assignment): higher
 - Don't chase 100% on simple UI components

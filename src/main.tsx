@@ -1,12 +1,12 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Outlet } from 'react-router'
-import './index.css'
-import { Navbar } from './components/Navbar'
-import App from './App'
-import { RecordingDetail } from './pages/RecordingDetail'
-import { PeoplePage } from './pages/PeoplePage'
-import { SyncPage } from './pages/SyncPage'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router";
+import "./index.css";
+import { Navbar } from "./components/Navbar";
+import App from "./App";
+import { RecordingDetail } from "./pages/RecordingDetail";
+import { PeoplePage } from "./pages/PeoplePage";
+import { SyncPage } from "./pages/SyncPage";
 
 function Layout() {
   return (
@@ -16,10 +16,10 @@ function Layout() {
         <Outlet />
       </div>
     </div>
-  )
+  );
 }
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
@@ -32,4 +32,4 @@ createRoot(document.getElementById('root')!).render(
       </Routes>
     </BrowserRouter>
   </StrictMode>,
-)
+);

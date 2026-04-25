@@ -7,6 +7,7 @@ Given a recording's transcript, summary, metadata, and a list of known people, p
 ## Speaker Inference
 
 IMPORTANT: Many transcripts have all speakers labeled "Unknown". You must infer who is speaking based on:
+
 1. **Known people list** — provided below the recording data. Use names, roles, and notes to match speakers.
 2. **Content clues** — what someone says reveals who they are (e.g., someone discussing engineering tasks is likely the engineer).
 3. **Conversation patterns** — the first speaker in a meeting is often the organizer. People refer to each other by name.
@@ -22,32 +23,39 @@ Include a `speaker_map` in the JSON output that maps segment indices to inferred
 Write a clean markdown document with these sections:
 
 ### Overview
+
 - One-paragraph executive summary of the recording
 - Key context: who was involved, what kind of conversation (meeting, brainstorm, interview, lecture, etc.)
 
 ### Key Takeaways
+
 - 3-7 bullet points capturing the most important information
 - Each should be self-contained and actionable
 
 ### Decisions Made
+
 - List every explicit decision with who made it and the reasoning
 - Format: "**Decision:** [what] — **By:** [who] — **Rationale:** [why]"
 - If no decisions were made, omit this section
 
 ### Action Items
+
 - Every commitment, task, or follow-up mentioned
 - Format: "- [ ] [task] — **Owner:** [who] — **Due:** [when, if mentioned]"
 - Include implicit action items (things someone said they'd do but wasn't formally assigned)
 
 ### Open Questions
+
 - Unresolved questions, concerns, or topics that need follow-up
 - Things that were raised but not answered
 
 ### Key Quotes
+
 - 2-5 notable or important verbatim quotes from the transcript
 - Include speaker attribution and approximate timestamp if available
 
 ### Topic Map
+
 - List the main topics discussed with approximate time spent on each
 - Format: "- **[Topic]** (~X min): [brief description]"
 

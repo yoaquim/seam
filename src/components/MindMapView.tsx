@@ -34,9 +34,7 @@ function layoutNodes(data: MindMapData): { nodes: Node[]; edges: Edge[] } {
   }
 
   // Find root(s) — nodes with no parent
-  const roots = data.nodes
-    .map((n) => n.id)
-    .filter((id) => !hasParent.has(id));
+  const roots = data.nodes.map((n) => n.id).filter((id) => !hasParent.has(id));
   const root = roots[0] || data.nodes[0]?.id;
 
   // BFS to assign positions
@@ -159,10 +157,7 @@ export function MindMapView({ data, title }: MindMapViewProps) {
         <div className="flex gap-3 mt-1">
           {Object.entries(NODE_COLORS).map(([type, colors]) => (
             <span key={type} className="flex items-center gap-1 text-xs text-muted-foreground">
-              <span
-                className="inline-block w-3 h-3 rounded"
-                style={{ background: colors.bg }}
-              />
+              <span className="inline-block w-3 h-3 rounded" style={{ background: colors.bg }} />
               {type}
             </span>
           ))}

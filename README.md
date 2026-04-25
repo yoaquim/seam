@@ -11,12 +11,12 @@
 
 ## Screenshots
 
-| Home | Summary | Actions |
-|------|---------|---------|
+| Home                               | Summary                                         | Actions                                         |
+| ---------------------------------- | ----------------------------------------------- | ----------------------------------------------- |
 | ![Home](docs/screenshots/home.png) | ![Summary](docs/screenshots/detail-summary.png) | ![Actions](docs/screenshots/detail-actions.png) |
 
-| Transcript | Mind Map |
-|------------|----------|
+| Transcript                                            | Mind Map                                         |
+| ----------------------------------------------------- | ------------------------------------------------ |
 | ![Transcript](docs/screenshots/detail-transcript.png) | ![Mind Map](docs/screenshots/detail-mindmap.png) |
 
 ## Features
@@ -76,6 +76,7 @@ npm run dev
 ### Analysis prompt (`prompts/analyze.md`)
 
 Claude produces per recording:
+
 - Executive summary, key takeaways, decisions, action items
 - Open questions, key quotes, topic breakdown
 - Mind map graph (nodes + edges)

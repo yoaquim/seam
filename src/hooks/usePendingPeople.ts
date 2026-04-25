@@ -25,7 +25,9 @@ export function usePendingPeople() {
       .catch(() => setLoading(false));
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const confirm = useCallback(async (id: string) => {
     const res = await fetch(`${API}/api/people/pending/${id}/confirm`, { method: "POST" });

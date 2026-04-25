@@ -13,10 +13,7 @@ export function Navbar() {
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shrink-0">
       <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-        <button
-          onClick={() => navigate("/")}
-          className="flex items-baseline gap-2 cursor-pointer"
-        >
+        <button onClick={() => navigate("/")} className="flex items-baseline gap-2 cursor-pointer">
           <img src="/logo.svg" alt="Seam" className="h-6 w-auto self-center" />
           <span className="text-lg font-bold tracking-tight">Seam</span>
           <span className="text-xs text-muted-foreground">Pocket AI Dashboard</span>

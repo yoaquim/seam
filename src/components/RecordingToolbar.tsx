@@ -1,12 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import {
-  ArrowDownAZ,
-  ArrowUpAZ,
-  Calendar,
-  Clock,
-  Tag,
-  Filter,
-} from "lucide-react";
+import { ArrowDownAZ, ArrowUpAZ, Calendar, Clock, Tag, Filter } from "lucide-react";
 import { tagClassName } from "@/lib/tag-colors";
 import type { Recording } from "@/types/recording";
 
@@ -37,17 +30,17 @@ export function RecordingToolbar({
   onFilterTagChange,
 }: RecordingToolbarProps) {
   // Collect unique types and tags
-  const types = [...new Set(
-    recordings
-      .map((r) => r.analysis?.type)
-      .filter(Boolean) as string[]
-  )].sort();
+  const types = [
+    ...new Set(recordings.map((r) => r.analysis?.type).filter(Boolean) as string[]),
+  ].sort();
 
-  const tags = [...new Set(
-    recordings.flatMap((r) =>
-      (r.data.tags || []).map((t) => (typeof t === "string" ? t : t.name))
-    )
-  )].sort();
+  const tags = [
+    ...new Set(
+      recordings.flatMap((r) =>
+        (r.data.tags || []).map((t) => (typeof t === "string" ? t : t.name)),
+      ),
+    ),
+  ].sort();
 
   const SortIcon = sortDir === "asc" ? ArrowUpAZ : ArrowDownAZ;
 
@@ -159,9 +152,7 @@ export function sortAndFilter(
   // Filter by tag
   if (filterTag) {
     result = result.filter((r) =>
-      (r.data.tags || []).some((t) =>
-        (typeof t === "string" ? t : t.name) === filterTag
-      )
+      (r.data.tags || []).some((t) => (typeof t === "string" ? t : t.name) === filterTag),
     );
   }
 
@@ -194,8 +185,7 @@ export function getRecordingDate(r: Recording): string {
       return d.toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
     }
   }
-  return r.dirName.match(/^(\d{4}-\d{2}-\d{2})/)?.[1]
-    || "Unknown date";
+  return r.dirName.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] || "Unknown date";
 }
 
 // Group recordings by date for the timeline

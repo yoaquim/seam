@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import express from "express";
-import { writeFileSync, mkdirSync, existsSync, unlinkSync, rmSync } from "fs";
+import { writeFileSync, mkdirSync, existsSync, rmSync } from "fs";
 import path from "path";
 import os from "os";
 
@@ -48,7 +48,7 @@ describe("Actions API", () => {
           { task: "Fix bug", owner: "Alice", completed: false },
           { task: "Write docs", owner: "Bob", completed: false },
         ],
-      })
+      }),
     );
     app = createApp(tmpDir);
   });
@@ -68,8 +68,8 @@ describe("Actions API", () => {
     const data = JSON.parse(
       require("fs").readFileSync(
         path.join(tmpDir, "analysis", "2026-04-22_test", "analysis.json"),
-        "utf-8"
-      )
+        "utf-8",
+      ),
     );
     expect(data.action_items[0].completed).toBe(true);
     expect(data.action_items[1].completed).toBe(false);
@@ -77,9 +77,7 @@ describe("Actions API", () => {
 
   it("toggles action item back to incomplete", async () => {
     // First complete it
-    await request(app)
-      .put("/api/recordings/2026-04-22_test/actions/0")
-      .send({ completed: true });
+    await request(app).put("/api/recordings/2026-04-22_test/actions/0").send({ completed: true });
     // Then uncomplete
     const res = await request(app)
       .put("/api/recordings/2026-04-22_test/actions/0")
@@ -89,8 +87,8 @@ describe("Actions API", () => {
     const data = JSON.parse(
       require("fs").readFileSync(
         path.join(tmpDir, "analysis", "2026-04-22_test", "analysis.json"),
-        "utf-8"
-      )
+        "utf-8",
+      ),
     );
     expect(data.action_items[0].completed).toBe(false);
   });

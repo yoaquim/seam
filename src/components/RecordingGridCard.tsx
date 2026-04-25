@@ -1,10 +1,5 @@
 import { useNavigate } from "react-router";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Users, Trash2 } from "lucide-react";
 import { tagClassName } from "@/lib/tag-colors";
@@ -44,9 +39,7 @@ interface RecordingGridCardProps {
 export function RecordingGridCard({ recording, onDelete }: RecordingGridCardProps) {
   const navigate = useNavigate();
   const { data, analysis } = recording;
-  const tags = (data.tags || []).map((t) =>
-    typeof t === "string" ? t : t.name
-  );
+  const tags = (data.tags || []).map((t) => (typeof t === "string" ? t : t.name));
   const type = analysis?.type || "other";
   const typeColor = TYPE_COLORS[type] || TYPE_COLORS.other;
   const actionCount = analysis?.action_items?.length || 0;
@@ -61,9 +54,7 @@ export function RecordingGridCard({ recording, onDelete }: RecordingGridCardProp
         {/* Type indicator bar */}
         <div className={`h-1 -mx-6 -mt-6 mb-3 rounded-t-lg ${typeColor}`} />
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-base leading-tight line-clamp-2">
-            {data.title}
-          </CardTitle>
+          <CardTitle className="text-base leading-tight line-clamp-2">{data.title}</CardTitle>
           <div className="flex items-center gap-1.5 shrink-0">
             <Badge variant="secondary" className="text-xs">
               {type}
@@ -96,10 +87,14 @@ export function RecordingGridCard({ recording, onDelete }: RecordingGridCardProp
             </span>
           )}
           {actionCount > 0 && (
-            <span>{actionCount} action{actionCount !== 1 ? "s" : ""}</span>
+            <span>
+              {actionCount} action{actionCount !== 1 ? "s" : ""}
+            </span>
           )}
           {questionCount > 0 && (
-            <span>{questionCount} question{questionCount !== 1 ? "s" : ""}</span>
+            <span>
+              {questionCount} question{questionCount !== 1 ? "s" : ""}
+            </span>
           )}
         </div>
       </CardHeader>
@@ -115,7 +110,11 @@ export function RecordingGridCard({ recording, onDelete }: RecordingGridCardProp
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
             {tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className={`text-xs px-1.5 py-0 ${tagClassName(tag)}`}>
+              <Badge
+                key={tag}
+                variant="secondary"
+                className={`text-xs px-1.5 py-0 ${tagClassName(tag)}`}
+              >
                 {tag}
               </Badge>
             ))}
@@ -127,11 +126,15 @@ export function RecordingGridCard({ recording, onDelete }: RecordingGridCardProp
           {TAB_BUTTONS.map(({ tab, label, color }) => {
             // Only show buttons that have content
             const hasContent =
-              tab === "summary" ? !!analysis?.executive_summary :
-              tab === "actions" ? (actionCount > 0 || questionCount > 0) :
-              tab === "transcript" ? (data.transcript?.length || 0) > 0 :
-              tab === "mindmap" ? (analysis?.mind_map?.nodes?.length || 0) > 0 :
-              false;
+              tab === "summary"
+                ? !!analysis?.executive_summary
+                : tab === "actions"
+                  ? actionCount > 0 || questionCount > 0
+                  : tab === "transcript"
+                    ? (data.transcript?.length || 0) > 0
+                    : tab === "mindmap"
+                      ? (analysis?.mind_map?.nodes?.length || 0) > 0
+                      : false;
 
             if (!hasContent) return null;
 

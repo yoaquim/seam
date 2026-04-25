@@ -30,16 +30,10 @@ const baseRecording: Recording = {
     participants: ["Alice", "Bob"],
     executive_summary: "Monday standup covering sprint progress.",
     takeaways: ["Auth migration in review", "Dashboard redesign starting"],
-    decisions: [
-      { decision: "Close items by Thursday", by: "Alice", rationale: "Demo Friday" },
-    ],
-    action_items: [
-      { task: "Merge auth PR", owner: "Bob", due: "2026-04-22", completed: false },
-    ],
+    decisions: [{ decision: "Close items by Thursday", by: "Alice", rationale: "Demo Friday" }],
+    action_items: [{ task: "Merge auth PR", owner: "Bob", due: "2026-04-22", completed: false }],
     open_questions: ["Will security approve today?"],
-    key_quotes: [
-      { text: "Should merge today.", speaker: "Bob", timestamp_seconds: 6 },
-    ],
+    key_quotes: [{ text: "Should merge today.", speaker: "Bob", timestamp_seconds: 6 }],
     topics: [],
     mind_map: { nodes: [], edges: [] },
     sentiment: "neutral",

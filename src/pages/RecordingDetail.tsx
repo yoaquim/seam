@@ -61,15 +61,14 @@ interface TranscriptViewProps {
 
 function TranscriptView({ segments, speakerMap, people, onAssignSpeaker }: TranscriptViewProps) {
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
-  let currentSpeaker: string | null = null;
-
   return (
     <div className="space-y-4">
       {segments.map((seg, i) => {
         // Apply speaker_map override
         const speaker = speakerMap?.[String(i)] || seg.speaker || "Unknown";
-        const showSpeaker = speaker !== currentSpeaker;
-        currentSpeaker = speaker;
+        const prevSpeaker =
+          i > 0 ? speakerMap?.[String(i - 1)] || segments[i - 1].speaker || "Unknown" : null;
+        const showSpeaker = speaker !== prevSpeaker;
         const isUnknown = speaker === "Unknown";
 
         return (
@@ -181,7 +180,7 @@ export function RecordingDetail() {
 
   const recording = useMemo(
     () => recordings.find((r) => r.dirName === dirName),
-    [recordings, dirName]
+    [recordings, dirName],
   );
 
   const activeTab = (searchParams.get("tab") as TabId) || "summary";
@@ -226,12 +225,11 @@ export function RecordingDetail() {
   const date = recordedTs
     ? new Date(recordedTs).toLocaleDateString("en-CA")
     : dirName?.match(/^(\d{4}-\d{2}-\d{2})/)?.[1] || null;
-  const processedDate = data.recording_at && data.created_at
-    ? new Date(data.created_at).toLocaleDateString("en-CA")
-    : null;
-  const tags = (data.tags || []).map((t) =>
-    typeof t === "string" ? t : t.name
-  );
+  const processedDate =
+    data.recording_at && data.created_at
+      ? new Date(data.created_at).toLocaleDateString("en-CA")
+      : null;
+  const tags = (data.tags || []).map((t) => (typeof t === "string" ? t : t.name));
 
   return (
     <div className="h-full flex flex-col bg-background">
@@ -299,29 +297,28 @@ export function RecordingDetail() {
       {/* Content — scrollable */}
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto px-6 py-6">
-        {activeTab === "summary" && <SummaryTab analysis={analysis} />}
-        {activeTab === "actions" && <ActionsTab analysis={analysis} dirName={dirName!} />}
-        {activeTab === "transcript" && (
-          <TranscriptTab
-            segments={data.transcript || []}
-            speakerMap={analysis?.speaker_map}
-            people={peopleNames}
-            dirName={dirName!}
-          />
-        )}
-        {activeTab === "mindmap" && (
-          <MindMapTab
-            data={analysis?.mind_map}
-            title={data.title}
-          />
-        )}
+          {activeTab === "summary" && <SummaryTab analysis={analysis} />}
+          {activeTab === "actions" && <ActionsTab analysis={analysis} dirName={dirName!} />}
+          {activeTab === "transcript" && (
+            <TranscriptTab
+              segments={data.transcript || []}
+              speakerMap={analysis?.speaker_map}
+              people={peopleNames}
+              dirName={dirName!}
+            />
+          )}
+          {activeTab === "mindmap" && <MindMapTab data={analysis?.mind_map} title={data.title} />}
         </div>
       </main>
     </div>
   );
 }
 
-function SummaryTab({ analysis }: { analysis: ReturnType<() => import("@/types/recording").AnalysisData> | null }) {
+function SummaryTab({
+  analysis,
+}: {
+  analysis: ReturnType<() => import("@/types/recording").AnalysisData> | null;
+}) {
   if (!analysis) {
     return <EmptyState message="No analysis available. Run a sync to analyze this recording." />;
   }
@@ -369,9 +366,7 @@ function SummaryTab({ analysis }: { analysis: ReturnType<() => import("@/types/r
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {topic.description}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{topic.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -382,21 +377,18 @@ function SummaryTab({ analysis }: { analysis: ReturnType<() => import("@/types/r
       {/* Key Quotes */}
       {analysis.key_quotes.length > 0 && (
         <section>
-          <SectionTitle icon={<MessageSquare className="h-4 w-4" />}>
-            Key Quotes
-          </SectionTitle>
+          <SectionTitle icon={<MessageSquare className="h-4 w-4" />}>Key Quotes</SectionTitle>
           <div className="space-y-3">
             {analysis.key_quotes.map((q, i) => (
               <div key={i} className="flex items-start gap-2">
-                <blockquote
-                  className="text-sm border-l-2 border-emerald-300 pl-4 italic text-muted-foreground flex-1"
-                >
+                <blockquote className="text-sm border-l-2 border-emerald-300 pl-4 italic text-muted-foreground flex-1">
                   "{q.text}"
                   <span className="not-italic block text-xs mt-1 font-medium">
                     — {q.speaker}
                     {q.timestamp_seconds != null && (
                       <span className="text-muted-foreground font-normal">
-                        {" "}at {formatTimestamp(q.timestamp_seconds)}
+                        {" "}
+                        at {formatTimestamp(q.timestamp_seconds)}
                       </span>
                     )}
                   </span>
@@ -417,14 +409,10 @@ interface ActionsTabProps {
 }
 
 function ActionsTab({ analysis, dirName }: ActionsTabProps) {
-  const [actionStates, setActionStates] = useState<boolean[]>([]);
-
   // Initialize from analysis
-  useMemo(() => {
-    if (analysis?.action_items) {
-      setActionStates(analysis.action_items.map((a) => a.completed));
-    }
-  }, [analysis]);
+  const [actionStates, setActionStates] = useState<boolean[]>(
+    () => analysis?.action_items?.map((a) => a.completed) ?? [],
+  );
 
   if (!analysis) {
     return <EmptyState message="No analysis available." />;
@@ -470,15 +458,15 @@ function ActionsTab({ analysis, dirName }: ActionsTabProps) {
     .map((d) => `- ${d.decision} (by ${d.by})${d.rationale ? ` — ${d.rationale}` : ""}`)
     .join("\n");
 
-  const allQuestionsText = analysis.open_questions
-    .map((q) => `- ${q}`)
-    .join("\n");
+  const allQuestionsText = analysis.open_questions.map((q) => `- ${q}`).join("\n");
 
   const allText = [
     hasActions ? `Action Items:\n${allActionsText}` : "",
     hasDecisions ? `Decisions:\n${allDecisionsText}` : "",
     hasQuestions ? `Open Questions:\n${allQuestionsText}` : "",
-  ].filter(Boolean).join("\n\n");
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   return (
     <div className="space-y-8">
@@ -596,16 +584,22 @@ interface TranscriptTabProps {
 function TranscriptTab({ segments, speakerMap, people, dirName }: TranscriptTabProps) {
   const [speakerFilter, setSpeakerFilter] = useState<string | null>(null);
   const [localSpeakerMap, setLocalSpeakerMap] = useState<Record<string, string>>(speakerMap || {});
-
-  if (segments.length === 0) {
-    return <EmptyState message="No transcript available." />;
-  }
+  const [pendingAssign, setPendingAssign] = useState<{
+    segmentIndex: number;
+    speaker: string;
+    originalSpeaker: string;
+    allCount: number;
+  } | null>(null);
 
   // Resolve speakers using map
-  const resolvedSegments = segments.map((seg, i) => ({
-    ...seg,
-    speaker: localSpeakerMap[String(i)] || seg.speaker || "Unknown",
-  }));
+  const resolvedSegments = useMemo(
+    () =>
+      segments.map((seg, i) => ({
+        ...seg,
+        speaker: localSpeakerMap[String(i)] || seg.speaker || "Unknown",
+      })),
+    [segments, localSpeakerMap],
+  );
 
   // Get unique speakers with segment counts
   const speakerStats = useMemo(() => {
@@ -620,16 +614,13 @@ function TranscriptTab({ segments, speakerMap, people, dirName }: TranscriptTabP
     ? resolvedSegments.filter((s) => s.speaker === speakerFilter)
     : resolvedSegments;
 
-  // Pending speaker assignment — waiting for user to choose scope
-  const [pendingAssign, setPendingAssign] = useState<{
-    segmentIndex: number;
-    speaker: string;
-    originalSpeaker: string;
-    allCount: number;
-  } | null>(null);
+  if (segments.length === 0) {
+    return <EmptyState message="No transcript available." />;
+  }
 
   const handleAssignSpeaker = async (segmentIndex: number, speaker: string) => {
-    const originalSpeaker = localSpeakerMap[String(segmentIndex)] || segments[segmentIndex]?.speaker || "Unknown";
+    const originalSpeaker =
+      localSpeakerMap[String(segmentIndex)] || segments[segmentIndex]?.speaker || "Unknown";
 
     // Count how many segments have this speaker
     let allCount = 0;
@@ -684,7 +675,8 @@ function TranscriptTab({ segments, speakerMap, people, dirName }: TranscriptTabP
       {pendingAssign && (
         <div className="mb-4 p-3 rounded-lg border bg-muted/50 space-y-2">
           <p className="text-sm">
-            Rename <strong>"{pendingAssign.originalSpeaker}"</strong> to <strong>"{pendingAssign.speaker}"</strong>?
+            Rename <strong>"{pendingAssign.originalSpeaker}"</strong> to{" "}
+            <strong>"{pendingAssign.speaker}"</strong>?
           </p>
           <div className="flex gap-2">
             <button
@@ -770,13 +762,7 @@ function MindMapTab({
   );
 }
 
-function SectionTitle({
-  children,
-  icon,
-}: {
-  children: React.ReactNode;
-  icon?: React.ReactNode;
-}) {
+function SectionTitle({ children, icon }: { children: React.ReactNode; icon?: React.ReactNode }) {
   return (
     <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-3">
       {icon}
@@ -786,9 +772,5 @@ function SectionTitle({
 }
 
 function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="text-center py-16 text-muted-foreground text-sm">
-      {message}
-    </div>
-  );
+  return <div className="text-center py-16 text-muted-foreground text-sm">{message}</div>;
 }

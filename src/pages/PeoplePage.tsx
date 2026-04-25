@@ -7,12 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Plus,
   Trash2,
@@ -29,7 +24,12 @@ import type { Person } from "@/types/people";
 
 export function PeoplePage() {
   const { people, addPerson, updatePerson, deletePerson, refresh: refreshPeople } = usePeople();
-  const { pending, confirm: confirmPending, merge: mergePending, dismiss: dismissPending } = usePendingPeople();
+  const {
+    pending,
+    confirm: confirmPending,
+    merge: mergePending,
+    dismiss: dismissPending,
+  } = usePendingPeople();
   const { recordings } = useRecordings();
   const [mergeTarget, setMergeTarget] = useState<string | null>(null); // pending person id being merged
   const [newName, setNewName] = useState("");
@@ -61,7 +61,10 @@ export function PeoplePage() {
 
   const handleAdd = async () => {
     if (!newName.trim()) return;
-    const tags = newTags.split(",").map((t) => t.trim()).filter(Boolean);
+    const tags = newTags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
     await addPerson(newName, newRole || undefined, undefined, tags.length > 0 ? tags : undefined);
     setNewName("");
     setNewRole("");
@@ -80,8 +83,14 @@ export function PeoplePage() {
 
   const handleSave = async () => {
     if (!selected) return;
-    const aliases = editAliases.split(",").map((a) => a.trim()).filter(Boolean);
-    const tags = editTags.split(",").map((t) => t.trim()).filter(Boolean);
+    const aliases = editAliases
+      .split(",")
+      .map((a) => a.trim())
+      .filter(Boolean);
+    const tags = editTags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
     await updatePerson(selected.id, {
       name: editName,
       role: editRole || undefined,
@@ -118,9 +127,7 @@ export function PeoplePage() {
   };
 
   const allTags = [...new Set(people.flatMap((p) => p.tags || []))].sort();
-  const filteredPeople = filterTag
-    ? people.filter((p) => p.tags?.includes(filterTag))
-    : people;
+  const filteredPeople = filterTag ? people.filter((p) => p.tags?.includes(filterTag)) : people;
 
   return (
     <div className="min-h-full bg-background">
@@ -152,7 +159,8 @@ export function PeoplePage() {
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-medium">{p.name}</span>
                         <span className="text-xs text-muted-foreground ml-2">
-                          {p.count} mention{p.count !== 1 ? "s" : ""} in {p.seenIn.length} recording{p.seenIn.length !== 1 ? "s" : ""}
+                          {p.count} mention{p.count !== 1 ? "s" : ""} in {p.seenIn.length} recording
+                          {p.seenIn.length !== 1 ? "s" : ""}
                         </span>
                       </div>
                       <div className="flex gap-1.5 shrink-0">
@@ -301,7 +309,11 @@ export function PeoplePage() {
                         <span className="text-xs text-muted-foreground">{person.role}</span>
                       )}
                       {person.tags?.map((tag) => (
-                        <Badge key={tag} variant="secondary" className={`text-xs px-1.5 py-0 ${tagClassName(tag)}`}>
+                        <Badge
+                          key={tag}
+                          variant="secondary"
+                          className={`text-xs px-1.5 py-0 ${tagClassName(tag)}`}
+                        >
                           {tag}
                         </Badge>
                       ))}
@@ -337,7 +349,10 @@ export function PeoplePage() {
                     <label className="text-xs text-muted-foreground block mb-1">Name</label>
                     <Input
                       value={editName}
-                      onChange={(e) => { setEditName(e.target.value); markDirty(); }}
+                      onChange={(e) => {
+                        setEditName(e.target.value);
+                        markDirty();
+                      }}
                     />
                   </div>
                   <div>
@@ -345,23 +360,36 @@ export function PeoplePage() {
                     <Input
                       placeholder="e.g. CTO, Engineer, Client"
                       value={editRole}
-                      onChange={(e) => { setEditRole(e.target.value); markDirty(); }}
+                      onChange={(e) => {
+                        setEditRole(e.target.value);
+                        markDirty();
+                      }}
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground block mb-1">Aliases (comma-separated)</label>
+                    <label className="text-xs text-muted-foreground block mb-1">
+                      Aliases (comma-separated)
+                    </label>
                     <Input
                       placeholder="e.g. Joaquin, J, joaquim"
                       value={editAliases}
-                      onChange={(e) => { setEditAliases(e.target.value); markDirty(); }}
+                      onChange={(e) => {
+                        setEditAliases(e.target.value);
+                        markDirty();
+                      }}
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground block mb-1">Tags (comma-separated)</label>
+                    <label className="text-xs text-muted-foreground block mb-1">
+                      Tags (comma-separated)
+                    </label>
                     <Input
                       placeholder="e.g. engineering, leadership"
                       value={editTags}
-                      onChange={(e) => { setEditTags(e.target.value); markDirty(); }}
+                      onChange={(e) => {
+                        setEditTags(e.target.value);
+                        markDirty();
+                      }}
                     />
                   </div>
                   <div>
@@ -369,7 +397,10 @@ export function PeoplePage() {
                     <Input
                       placeholder="e.g. usually discusses backend architecture"
                       value={editNotes}
-                      onChange={(e) => { setEditNotes(e.target.value); markDirty(); }}
+                      onChange={(e) => {
+                        setEditNotes(e.target.value);
+                        markDirty();
+                      }}
                     />
                   </div>
                 </div>
@@ -380,7 +411,8 @@ export function PeoplePage() {
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Mic className="h-3 w-3" />
-                    {getRecordingCount(selected)} recording{getRecordingCount(selected) !== 1 ? "s" : ""}
+                    {getRecordingCount(selected)} recording
+                    {getRecordingCount(selected) !== 1 ? "s" : ""}
                   </span>
                   <span>Source: {selected.source}</span>
                 </div>
@@ -396,12 +428,7 @@ export function PeoplePage() {
                     <Trash2 className="h-3.5 w-3.5" />
                     Delete
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleSave}
-                    disabled={!dirty}
-                    className="gap-1"
-                  >
+                  <Button size="sm" onClick={handleSave} disabled={!dirty} className="gap-1">
                     <Save className="h-3.5 w-3.5" />
                     Save
                   </Button>
