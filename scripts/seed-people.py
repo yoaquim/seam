@@ -27,6 +27,10 @@ GENERIC_TOKENS = {
     "parent", "child", "interviewer", "interviewee", "participant",
     "guest", "attendee", "client", "customer", "user", "tech",
     "platform", "analytics", "ela", "ent", "yc", "new",
+GENERIC_LABELS = {
+    "unknown", "speaker", "narrator", "host", "facilitator", "moderator",
+    "chair", "participant", "interviewer", "interviewee",
+    "guest", "attendee", "caller", "member", "team",
 }
 
 SPEAKER_NUM_RE = re.compile(r"^speaker\s*\d+$", re.IGNORECASE)
