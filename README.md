@@ -31,8 +31,9 @@
 - **Speaker inference** — Claude maps "Unknown" speakers to known people using names, roles, and context
 - **Interactive mind maps** — visual topic graphs with color-coded nodes (React Flow)
 - **People management** — create people with aliases, tags, roles, and notes for speaker attribution
+- **People staging** — inferred speakers from analysis land in a review queue: confirm as new person, merge as alias into existing, or dismiss
 - **Colored tags** — auto-assigned color palette for people and recording tags
-- **Speaker assignment** — manually rename speakers in transcripts (single block or all segments)
+- **Speaker assignment** — manually rename speakers in transcripts (all segments or single block, with confirmation)
 - **Action items** — toggle completion, copy individual items or entire sections
 - **Copy to clipboard** — structured copy for action items, decisions, open questions, key quotes
 - **Search** — full-text search across recordings, transcripts, and analyses
@@ -40,8 +41,11 @@
 - **Date grouping** — timeline grouped by "Today", "Yesterday", day name
 - **Recording dates** — uses actual recording time, not processing time
 - **Sync page** — real-time log streaming, sync history with expandable logs, stop/cancel with cleanup
+- **Auto-sync setup** — copy-pasteable crontab and launchd commands on the Sync page
 - **Delete tracking** — deleted recordings won't re-sync
 - **File-based storage** — portable `.seam/` directory, no database required
+- **CI pipeline** — GitHub Actions runs format, lint, build, and test on every PR
+- **Pre-commit hooks** — husky runs Prettier, ESLint, and tests before every commit
 
 ## Prerequisites
 
@@ -97,12 +101,14 @@ React + TypeScript + Tailwind + shadcn/ui + React Flow.
   - **Actions** — toggleable action items, decisions with rationale, open questions. Copy individual or all.
   - **Transcript** — speaker filter pills, manual speaker assignment (all segments or single block), [edit] inline
   - **Mind Map** — interactive graph with zoom, pan, minimap, color-coded node types
-- **People** — manage people with name, role, aliases (for speaker matching), colored tags, and notes. Click card to view/edit.
-- **Sync** — start/stop sync, real-time streaming logs, history of past syncs with expandable log viewer
+- **People** — manage people with name, role, aliases (for speaker matching), colored tags, and notes. Click card to view/edit. Pending speakers detected from analysis shown at the top for review.
+- **Sync** — start/stop sync, real-time streaming logs, history of past syncs with expandable log viewer, auto-sync setup guide with copy-pasteable cron commands
 
 ### People & speaker inference
 
 Add people at `/people` with name, role, aliases, tags, and notes. Aliases let you map variations ("Joaquin" → "Yoaquim") so the same person is recognized across recordings. During analysis, Claude uses this list to infer who is speaking. You can also manually reassign speakers in the transcript view — choose to rename all segments from that speaker or just a single block.
+
+After each sync, `stage-people.py` scans analysis results for new speaker names and stages them for review. On the People page, you can confirm (create new person), merge (add as alias to existing person), or dismiss (add to exclusion list so it won't resurface).
 
 ## Project structure
 
