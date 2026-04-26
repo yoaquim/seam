@@ -19,9 +19,9 @@
 | ----------------------------------------------------- | ------------------------------------------------ |
 | ![Transcript](docs/screenshots/detail-transcript.png) | ![Mind Map](docs/screenshots/detail-mindmap.png) |
 
-| People                                  |
-| --------------------------------------- |
-| ![People](docs/screenshots/people.png)  |
+| People                                 |
+| -------------------------------------- |
+| ![People](docs/screenshots/people.png) |
 
 ## Features
 
