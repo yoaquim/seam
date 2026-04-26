@@ -16,6 +16,9 @@ import {
   Shield,
   ArrowRight,
   Zap,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon,
+  X,
 } from "lucide-react";
 
 function GithubIcon({ className }: { className?: string }) {
@@ -145,6 +148,89 @@ const features = [
   },
 ];
 
+function Lightbox({
+  features: items,
+  active: initialActive,
+  onClose,
+  onNavigate,
+}: {
+  features: typeof features;
+  active: number;
+  onClose: () => void;
+  onNavigate: (i: number) => void;
+}) {
+  const [current, setCurrent] = useState(initialActive);
+
+  const goPrev = useCallback(() => {
+    const next = (current - 1 + items.length) % items.length;
+    setCurrent(next);
+    onNavigate(next);
+  }, [current, items.length, onNavigate]);
+
+  const goNext = useCallback(() => {
+    const next = (current + 1) % items.length;
+    setCurrent(next);
+    onNavigate(next);
+  }, [current, items.length, onNavigate]);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "ArrowRight") goNext();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose, goPrev, goNext]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
+      {/* Close */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 bg-white/90 hover:bg-white rounded-full p-2 cursor-pointer transition-colors z-10"
+      >
+        <X className="h-5 w-5 text-[#2b2b2b]" />
+      </button>
+
+      {/* Prev */}
+      <button
+        onClick={goPrev}
+        className="absolute left-4 md:left-8 bg-white/90 hover:bg-white rounded-full p-2 cursor-pointer transition-colors z-10"
+      >
+        <ChevronLeft className="h-6 w-6 text-[#2b2b2b]" />
+      </button>
+
+      {/* Image */}
+      <div
+        className="relative max-w-6xl w-full animate-in zoom-in-95 fade-in duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <img
+          key={items[current].screenshot}
+          src={`${BASE}screenshots/${items[current].screenshot}`}
+          alt={items[current].name}
+          className="w-full rounded-xl shadow-2xl animate-in fade-in duration-300"
+        />
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 rounded-full px-4 py-1.5 text-sm font-medium text-[#2b2b2b]">
+          {items[current].name} — {current + 1}/{items.length}
+        </div>
+      </div>
+
+      {/* Next */}
+      <button
+        onClick={goNext}
+        className="absolute right-4 md:right-8 bg-white/90 hover:bg-white rounded-full p-2 cursor-pointer transition-colors z-10"
+      >
+        <ChevronRightIcon className="h-6 w-6 text-[#2b2b2b]" />
+      </button>
+
+      {/* Backdrop click to close */}
+      <div className="absolute inset-0 -z-10" onClick={onClose} />
+    </div>
+  );
+}
+
 function Features() {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -249,21 +335,12 @@ function Features() {
 
         {/* Lightbox */}
         {lightbox && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-pointer p-6"
-            onClick={() => setLightbox(false)}
-          >
-            <div className="relative max-w-6xl w-full animate-in zoom-in-95 fade-in duration-200">
-              <img
-                src={`${BASE}screenshots/${current.screenshot}`}
-                alt={current.name}
-                className="w-full rounded-xl shadow-2xl"
-              />
-              <div className="absolute top-4 right-4 bg-white/90 rounded-full px-3 py-1 text-xs font-medium text-[#2b2b2b]">
-                Click anywhere to close
-              </div>
-            </div>
-          </div>
+          <Lightbox
+            features={features}
+            active={active}
+            onClose={() => setLightbox(false)}
+            onNavigate={setActive}
+          />
         )}
       </div>
     </section>
