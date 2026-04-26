@@ -1,5 +1,5 @@
+import { useState, useEffect, useCallback } from "react";
 import { BlurFade } from "@/components/ui/blur-fade";
-import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
 import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { WordRotate } from "@/components/ui/word-rotate";
@@ -111,38 +111,57 @@ const features = [
   {
     name: "AI Analysis",
     description:
-      "Claude analyzes every recording — summaries, action items, decisions, open questions, key quotes, mind maps, and sentiment.",
+      "Claude analyzes every recording — executive summaries, key takeaways, topic breakdowns, sentiment analysis, and key quotes with speaker attribution.",
     icon: Brain,
-    className: "md:col-span-2",
     screenshot: "detail-summary.png",
+  },
+  {
+    name: "Action Items & Decisions",
+    description:
+      "Toggle action items as done, track decisions with rationale, surface open questions. Copy any section in structured format — paste into Slack, Notion, or email.",
+    icon: CheckCircle,
+    screenshot: "detail-actions.png",
+  },
+  {
+    name: "Transcript & Speakers",
+    description:
+      "Full transcripts with speaker labels and timestamps. Filter by speaker, manually reassign who said what — all segments or just one block.",
+    icon: Mic,
+    screenshot: "detail-transcript.png",
   },
   {
     name: "Interactive Mind Maps",
     description:
-      "Visual topic graphs with color-coded nodes. Zoom, pan, and explore how topics, decisions, and actions connect.",
+      "Visual topic graphs with color-coded nodes for topics, decisions, actions, and questions. Zoom, pan, and explore how ideas connect.",
     icon: GitBranch,
-    className: "md:col-span-1",
     screenshot: "detail-mindmap.png",
   },
   {
-    name: "People & Speaker Inference",
+    name: "People Management",
     description:
-      "Manage people with aliases and tags. Claude infers who's speaking. Confirm, merge, or dismiss detected speakers.",
+      "Create people with roles, aliases, and colored tags. Claude uses your people list to infer speakers. Confirm, merge, or dismiss detected speakers from a review queue.",
     icon: Users,
-    className: "md:col-span-1",
     screenshot: "people.png",
-  },
-  {
-    name: "Action Items & Copy",
-    description:
-      "Toggle action items, copy decisions, questions, and quotes in structured format. Paste anywhere.",
-    icon: CheckCircle,
-    className: "md:col-span-2",
-    screenshot: "detail-actions.png",
   },
 ];
 
 function Features() {
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  const next = useCallback(() => {
+    setActive((prev) => (prev + 1) % features.length);
+  }, []);
+
+  useEffect(() => {
+    if (paused) return;
+    const timer = setInterval(next, 5000);
+    return () => clearInterval(timer);
+  }, [paused, next]);
+
+  const current = features[active];
+  const Icon = current.icon;
+
   return (
     <section className="py-20 px-6" id="features">
       <div className="max-w-6xl mx-auto">
@@ -158,27 +177,71 @@ function Features() {
           </p>
         </BlurFade>
 
-        <BentoGrid className="md:grid-cols-3 gap-4">
-          {features.map((feature, i) => (
-            <BlurFade key={feature.name} delay={0.1 + i * 0.1}>
-              <BentoCard
-                name={feature.name}
-                description={feature.description}
-                Icon={feature.icon}
-                className={`${feature.className} min-h-[300px]`}
-                background={
-                  <img
-                    src={`${BASE}screenshots/${feature.screenshot}`}
-                    alt={feature.name}
-                    className="absolute inset-0 w-full h-full object-cover object-top opacity-20 group-hover:opacity-30 transition-opacity"
-                  />
-                }
-                href="#"
-                cta=""
+        <div
+          className="grid md:grid-cols-5 gap-8 items-start"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
+          {/* Left: feature list */}
+          <div className="md:col-span-2 space-y-1">
+            {features.map((feature, i) => {
+              const FIcon = feature.icon;
+              const isActive = i === active;
+              return (
+                <button
+                  key={feature.name}
+                  onClick={() => setActive(i)}
+                  className={`w-full text-left px-4 py-3 rounded-lg transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-[#2b2b2b] text-white"
+                      : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <FIcon className={`h-5 w-5 shrink-0 ${isActive ? "text-white" : ""}`} />
+                    <span className="text-sm font-medium">{feature.name}</span>
+                  </div>
+                </button>
+              );
+            })}
+
+            {/* Active feature description */}
+            <div className="pt-4 px-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Icon className="h-5 w-5" />
+                <h3 className="text-lg font-semibold">{current.name}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {current.description}
+              </p>
+            </div>
+          </div>
+
+          {/* Right: screenshot */}
+          <div className="md:col-span-3">
+            <div className="rounded-xl border border-border shadow-lg overflow-hidden bg-muted/30">
+              <img
+                key={current.screenshot}
+                src={`${BASE}screenshots/${current.screenshot}`}
+                alt={current.name}
+                className="w-full animate-in fade-in duration-500"
               />
-            </BlurFade>
-          ))}
-        </BentoGrid>
+            </div>
+
+            {/* Dots */}
+            <div className="flex justify-center gap-2 mt-4">
+              {features.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActive(i)}
+                  className={`h-2 rounded-full transition-all cursor-pointer ${
+                    i === active ? "w-6 bg-[#2b2b2b]" : "w-2 bg-border hover:bg-muted-foreground"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
