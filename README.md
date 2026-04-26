@@ -9,6 +9,10 @@
   Pull your recordings via the API, analyze them with Claude, and browse everything in a local dashboard — no Pro subscription needed.
 </p>
 
+<p align="center">
+  <a href="https://yoaquim.github.io/seam/">Website</a> · <a href="https://github.com/yoaquim/seam">GitHub</a>
+</p>
+
 ## Screenshots
 
 | Home                               | Summary                                         | Actions                                         |
@@ -115,18 +119,22 @@ After each sync, `stage-people.py` scans analysis results for new speaker names 
 ```
 seam/
 ├── scripts/
-│   ├── pocket_pull.py        # Pulls recordings from Pocket API
-│   ├── pocket-run.sh         # Orchestration: pull → analyze (5 parallel) → rebuild
-│   └── build-manifest.py     # Aggregates data for the dashboard
+│   ├── pocket_pull.py        # Pulls recordings from Pocket API (with retry + pending-fetch)
+│   ├── pocket-run.sh         # Orchestration: pull → analyze (5 parallel) → stage people → rebuild
+│   ├── build-manifest.py     # Aggregates data for the dashboard
+│   ├── stage-people.py       # Stages inferred speakers for review
+│   └── seed-people.py        # Seeds people from existing analyses
 ├── prompts/
 │   └── analyze.md            # Claude analysis prompt template
 ├── server/
-│   └── index.ts              # Express API (sync, people, actions, speakers, delete)
+│   └── index.ts              # Express API (sync, people, pending people, actions, speakers, delete)
 ├── src/                      # React dashboard
+├── landing/                  # Landing page (separate Vite app, deployed to GitHub Pages)
 ├── .seam/                    # Local data (gitignored, created on first sync)
 │   ├── recordings/           # Structured recording data
 │   ├── analysis/             # Claude analysis output
 │   ├── people.json           # Known people registry
+│   ├── people-pending.json   # Staged speakers awaiting review
 │   └── sync-history.json     # Sync run history
 └── .env.example
 ```
@@ -134,7 +142,7 @@ seam/
 ## Tests
 
 ```bash
-npm test          # Runs vitest (TS) + pytest (Python) — 52 tests
+npm test          # Runs vitest (TS) + pytest (Python)
 npm run test:ts   # TypeScript only
 npm run test:py   # Python only
 ```
