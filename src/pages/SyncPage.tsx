@@ -12,6 +12,9 @@ import {
   ChevronRight,
   Terminal,
   Disc,
+  Clock,
+  Copy,
+  Check,
 } from "lucide-react";
 
 const API = "http://localhost:3001";
@@ -214,6 +217,89 @@ function HistoryEntry({ entry }: { entry: SyncHistoryEntry }) {
   );
 }
 
+function CopyCommand({ command, label }: { command: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="space-y-1">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-2">
+        <code className="flex-1 text-xs bg-[#1e1e1e] text-[#d4d4d4] p-2 rounded font-mono overflow-x-auto">
+          {command}
+        </code>
+        <button
+          onClick={async () => {
+            await navigator.clipboard.writeText(command);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }}
+          className="shrink-0 text-muted-foreground hover:text-foreground cursor-pointer p-1"
+        >
+          {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AutoSyncSetup() {
+  const [open, setOpen] = useState(false);
+  const projectPath =
+    window.location.hostname === "localhost" ? "~/Projects/seam" : "/path/to/seam";
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="w-full cursor-pointer">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Clock className="h-4 w-4" />
+          <span>Set up automatic sync</span>
+          {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <Card className="mt-3">
+          <CardContent className="p-4 space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Copy one of these commands to set up automatic nightly sync. The sync pulls new
+              recordings, analyzes them with Claude, and rebuilds the dashboard.
+            </p>
+
+            <CopyCommand
+              label="macOS (crontab) — runs at 2am daily"
+              command={`(crontab -l 2>/dev/null; echo "0 2 * * * cd ${projectPath} && ./scripts/pocket-run.sh >> .seam/seam.log 2>&1") | crontab -`}
+            />
+
+            <CopyCommand
+              label="Linux (crontab) — runs at 2am daily"
+              command={`(crontab -l 2>/dev/null; echo "0 2 * * * cd ${projectPath} && ./scripts/pocket-run.sh >> .seam/seam.log 2>&1") | crontab -`}
+            />
+
+            <CopyCommand
+              label="macOS (launchd) — runs at 2am, catches up on wake"
+              command={`cat > ~/Library/LaunchAgents/com.seam.sync.plist << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.seam.sync</string>
+  <key>ProgramArguments</key><array><string>${projectPath}/scripts/pocket-run.sh</string></array>
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>2</integer><key>Minute</key><integer>0</integer></dict>
+  <key>WorkingDirectory</key><string>${projectPath}</string>
+  <key>StandardOutPath</key><string>${projectPath}/.seam/seam.log</string>
+  <key>StandardErrorPath</key><string>${projectPath}/.seam/seam.log</string>
+</dict></plist>
+EOF
+launchctl load ~/Library/LaunchAgents/com.seam.sync.plist`}
+            />
+
+            <p className="text-xs text-muted-foreground">
+              On macOS, launchd runs missed jobs when the machine wakes from sleep.
+            </p>
+          </CardContent>
+        </Card>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 export function SyncPage() {
   const sync = useSync();
   const [history, setHistory] = useState<SyncHistoryEntry[]>([]);
@@ -297,6 +383,9 @@ export function SyncPage() {
         {(sync.status === "running" || (sync.logs.length > 0 && sync.status !== "idle")) && (
           <LiveSync sync={sync} />
         )}
+
+        {/* Automatic sync setup */}
+        <AutoSyncSetup />
 
         {/* History */}
         <div>
