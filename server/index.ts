@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { spawn } from "child_process";
-import { readFileSync, writeFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, rmSync, readdirSync, unlinkSync } from "fs";
 import { randomUUID } from "crypto";
 import path from "path";
 
@@ -118,7 +118,6 @@ app.post("/api/sync", (_req, res) => {
   const analysisBefore = new Set<string>();
   const analysisPath = path.join(ROOT, ".seam", "analysis");
   try {
-    const { readdirSync } = require("fs");
     for (const d of readdirSync(analysisPath)) analysisBefore.add(d);
   } catch {}
 
@@ -153,10 +152,9 @@ app.post("/api/sync", (_req, res) => {
       // Cancelled — clean up analyses created during this sync
       appendLog("Sync stopped. Cleaning up...");
       try {
-        const { readdirSync, rmSync: rm } = require("fs");
         for (const d of readdirSync(analysisPath)) {
           if (!analysisBefore.has(d)) {
-            rm(path.join(analysisPath, d), { recursive: true, force: true });
+            rmSync(path.join(analysisPath, d), { recursive: true, force: true });
             appendLog(`  Removed analysis: ${d}`);
           }
         }
@@ -357,7 +355,7 @@ function readPending(): PendingPerson[] {
 function writePending(pending: PendingPerson[]) {
   if (pending.length === 0) {
     try {
-      if (existsSync(PENDING_PEOPLE_FILE)) require("fs").unlinkSync(PENDING_PEOPLE_FILE);
+      if (existsSync(PENDING_PEOPLE_FILE)) unlinkSync(PENDING_PEOPLE_FILE);
     } catch {}
     return;
   }
@@ -473,7 +471,6 @@ app.delete("/api/recordings/:dirName", (req, res) => {
     return;
   }
 
-  const { rmSync } = require("fs");
   try {
     rmSync(recDir, { recursive: true, force: true });
     if (existsSync(analysisDir)) {
