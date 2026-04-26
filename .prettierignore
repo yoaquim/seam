@@ -3,3 +3,5 @@ node_modules
 .seam
 public/manifest.json
 package-lock.json
+landing
+docs/landing
