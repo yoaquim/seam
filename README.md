@@ -19,6 +19,10 @@
 | ----------------------------------------------------- | ------------------------------------------------ |
 | ![Transcript](docs/screenshots/detail-transcript.png) | ![Mind Map](docs/screenshots/detail-mindmap.png) |
 
+| People                                  |
+| --------------------------------------- |
+| ![People](docs/screenshots/people.png)  |
+
 ## Features
 
 - **Automatic sync** — pulls recordings from the Pocket API with real-time log streaming
