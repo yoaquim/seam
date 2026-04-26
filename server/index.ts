@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { spawn } from "child_process";
-import { readFileSync, writeFileSync, existsSync, rmSync, readdirSync, unlinkSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, rmSync, readdirSync } from "fs";
 import { randomUUID } from "crypto";
 import path from "path";
 
@@ -228,6 +228,11 @@ app.get("/api/status", (_req, res) => {
 // Sync history
 app.get("/api/sync/history", (_req, res) => {
   res.json({ entries: readSyncHistory() });
+});
+
+// Project info
+app.get("/api/info", (_req, res) => {
+  res.json({ root: ROOT });
 });
 
 // ── People API ───────────────────────────────────────────────
@@ -471,8 +476,8 @@ app.delete("/api/recordings/:dirName", (req, res) => {
       rmSync(analysisDir, { recursive: true, force: true });
     }
     addDeleted(dirName);
-  } catch (e: any) {
-    res.status(500).json({ error: e.message });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
     return;
   }
 

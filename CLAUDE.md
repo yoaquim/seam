@@ -85,6 +85,9 @@ Tests must pass before committing. No feature code without tests.
 ### Git
 
 - No direct pushes to main — PRs only
-- Pre-commit hook (husky) runs `npm test` — blocks commit if tests fail
+- **NEVER use `--no-verify`** — pre-commit hooks exist to catch issues before CI
+- Pre-commit hook (husky) runs: `format:check` → `lint` → `test`
+- **Before every commit**, verify locally: `npm run format:check && npm run lint && npm test`
+- If any of these fail, fix them before committing — do not bypass
 - Branches: `feature/`, `fix/`, `chore/`
 - Commit messages: imperative, describe the "what" and "why"
