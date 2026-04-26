@@ -54,12 +54,6 @@ function createApp(dataDir: string) {
   }
 
   function writePending(pending: PendingPerson[]) {
-    if (pending.length === 0) {
-      try {
-        if (existsSync(PENDING_FILE)) unlinkSync(PENDING_FILE);
-      } catch {}
-      return;
-    }
     writeFileSync(PENDING_FILE, JSON.stringify({ pending }, null, 2) + "\n");
   }
 
@@ -276,9 +270,10 @@ describe("Pending People API", () => {
     expect(res.status).toBe(404);
   });
 
-  it("cleans up pending file when last entry is removed", async () => {
+  it("writes empty pending list when last entry is removed", async () => {
     seedPending([{ id: "p1", name: "Ethan" }]);
     await request(app).post("/api/people/pending/p1/confirm");
-    expect(existsSync(path.join(tmpDir, "people-pending.json"))).toBe(false);
+    const data = JSON.parse(readFileSync(path.join(tmpDir, "people-pending.json"), "utf-8"));
+    expect(data.pending).toEqual([]);
   });
 });

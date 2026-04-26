@@ -353,12 +353,6 @@ function readPending(): PendingPerson[] {
 }
 
 function writePending(pending: PendingPerson[]) {
-  if (pending.length === 0) {
-    try {
-      if (existsSync(PENDING_PEOPLE_FILE)) unlinkSync(PENDING_PEOPLE_FILE);
-    } catch {}
-    return;
-  }
   writeFileSync(PENDING_PEOPLE_FILE, JSON.stringify({ pending }, null, 2) + "\n");
 }
 
