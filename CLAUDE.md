@@ -7,9 +7,10 @@ Open-source Pocket AI companion — pulls recordings via API, analyzes with Clau
 - **Dashboard**: React + TypeScript + Vite + Tailwind v4 + shadcn/ui (base-ui)
 - **Mind maps**: @xyflow/react (React Flow)
 - **Pull script**: Python 3 (stdlib only, no deps)
-- **Orchestration**: Bash
+- **Orchestration**: Bash (xargs -P for parallelism)
 - **Analysis**: Headless Claude Code
 - **API server**: Express (TypeScript)
+- **Landing page**: Vite + React + Magic UI + shadcn/ui (separate app in `landing/`)
 
 ## Project structure
 
@@ -17,9 +18,11 @@ Open-source Pocket AI companion — pulls recordings via API, analyzes with Clau
 - `scripts/pocket-run.sh` — orchestration: pull → analyze (5 parallel) → stage people → rebuild manifest
 - `scripts/build-manifest.py` — aggregates all recordings + analyses into `public/manifest.json`
 - `scripts/stage-people.py` — scans analyses for speaker names, stages for user review
+- `scripts/seed-people.py` — seeds people.json from existing analyses (contributed via PR)
 - `prompts/analyze.md` — prompt template for Claude analysis (includes speaker inference)
 - `server/index.ts` — Express API (sync, people, pending people, actions, speakers, delete)
 - `src/` — React dashboard
+- `landing/` — landing page (separate Vite app, builds to `docs/landing/`, deployed via GitHub Pages)
 - `.seam/` — local data directory (gitignored)
 
 ## Commands
@@ -29,12 +32,16 @@ Open-source Pocket AI companion — pulls recordings via API, analyzes with Clau
 - `npm test` — run all tests (vitest + pytest)
 - `npm run test:ts` — TypeScript tests only
 - `npm run test:py` — Python tests only
+- `npm run lint` — ESLint
+- `npm run format` — Prettier (write)
+- `npm run format:check` — Prettier (check only)
 - `./scripts/pocket-run.sh` — full sync (pull + analyze + rebuild)
 
 ## Config
 
 - `.env` — `POCKET_API_KEY=pk_xxx`
 - `.pocket-last-sync` — timestamp of last successful sync (auto-managed)
+- `.seam/generic-speakers.txt` — user-defined speaker exclusion list (one per line)
 
 ## Practices
 
@@ -84,10 +91,11 @@ Tests must pass before committing. No feature code without tests.
 
 ### Git
 
-- No direct pushes to main — PRs only
+- No direct pushes to main — PRs only, squash merge
 - **NEVER use `--no-verify`** — pre-commit hooks exist to catch issues before CI
 - Pre-commit hook (husky) runs: `format:check` → `lint` → `test`
 - **Before every commit**, verify locally: `npm run format:check && npm run lint && npm test`
 - If any of these fail, fix them before committing — do not bypass
 - Branches: `feature/`, `fix/`, `chore/`
 - Commit messages: imperative, describe the "what" and "why"
+- `landing/` and `docs/landing/` are excluded from root prettier and eslint (separate project)
