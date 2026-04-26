@@ -16,17 +16,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ANALYSIS_DIR = ROOT / ".seam" / "analysis"
-PEOPLE_FILE = ROOT / ".seam" / "people.json"
+DATA_DIR = ROOT / ".seam"
+ANALYSIS_DIR = DATA_DIR / "analysis"
+PEOPLE_FILE = DATA_DIR / "people.json"
 
-GENERIC_TOKENS = {
-    "unknown", "speaker", "narrator", "host", "facilitator", "moderator",
-    "chair", "manager", "lead", "engineer", "developer", "designer",
-    "analyst", "patient", "caller", "partner", "peer", "team", "member",
-    "physician", "doctor", "nurse", "guide", "tour", "father", "mother",
-    "parent", "child", "interviewer", "interviewee", "participant",
-    "guest", "attendee", "client", "customer", "user", "tech",
-    "platform", "analytics", "ela", "ent", "yc", "new",
+# Universally generic — never a real name
 GENERIC_LABELS = {
     "unknown", "speaker", "narrator", "host", "facilitator", "moderator",
     "chair", "participant", "interviewer", "interviewee",
@@ -36,19 +30,33 @@ GENERIC_LABELS = {
 SPEAKER_NUM_RE = re.compile(r"^speaker\s*\d+$", re.IGNORECASE)
 
 
-def is_generic(name: str) -> bool:
+def load_generic_labels() -> set[str]:
+    """Load universal generics + user-defined exclusions from .seam/generic-speakers.txt."""
+    labels = GENERIC_LABELS.copy()
+    custom_file = DATA_DIR / "generic-speakers.txt"
+    if custom_file.exists():
+        for line in custom_file.read_text().splitlines():
+            word = line.strip().lower()
+            if word and not word.startswith("#"):
+                labels.add(word)
+    return labels
+
+
+def is_generic(name: str, labels: set[str] | None = None) -> bool:
+    if labels is None:
+        labels = GENERIC_LABELS
     n = name.strip()
     if not n or n.lower() == "unknown":
         return True
     # Trailing parenthetical: "Mark (Speaker 01)" -> strip and re-test base
     base = re.sub(r"\s*\([^)]*\)\s*$", "", n).strip()
-    if base != n and not is_generic(base):
+    if base != n and not is_generic(base, labels):
         return False  # has a real name before the paren
     if SPEAKER_NUM_RE.match(n):
         return True
     # All tokens are generic role words → skip
     tokens = [t.lower() for t in re.split(r"[\s\-/]+", n) if t]
-    if tokens and all(t in GENERIC_TOKENS or t.isdigit() for t in tokens):
+    if tokens and all(t in labels or t.isdigit() for t in tokens):
         return True
     return False
 
@@ -63,6 +71,8 @@ def main() -> int:
         print(f"No analysis directory at {ANALYSIS_DIR}", file=sys.stderr)
         return 1
 
+    labels = load_generic_labels()
+
     # Tally by canonical name → keep the longest variant as display name
     # (e.g. prefer "Chris Woodson" over "Chris" when both appear).
     variants: dict[str, dict[str, int]] = {}
@@ -76,7 +86,7 @@ def main() -> int:
             if not isinstance(raw, str):
                 continue
             name = raw.strip()
-            if is_generic(name):
+            if is_generic(name, labels):
                 continue
             key = canonical(name).lower()
             if not key:
