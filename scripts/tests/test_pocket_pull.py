@@ -226,3 +226,113 @@ class TestGetApiKey:
 
 # Need pytest for the SystemExit test
 import pytest
+import urllib.error
+
+
+def make_http_error(code: int, retry_after: str | None = None) -> urllib.error.HTTPError:
+    headers = {}
+    if retry_after is not None:
+        headers["Retry-After"] = retry_after
+    return urllib.error.HTTPError(
+        url="http://test/x", code=code, msg=f"HTTP {code}", hdrs=headers, fp=None
+    )
+
+
+class TestRequestWithRetry:
+    def test_succeeds_first_try(self):
+        with patch("pocket_pull.urllib.request.urlopen") as mock_open, \
+             patch("pocket_pull.time.sleep") as mock_sleep:
+            mock_open.return_value = make_response({"ok": True})
+            req = MagicMock()
+            req.full_url = "http://test/x"
+            result = pocket_pull._request_with_retry(req)
+            assert result == {"ok": True}
+            assert mock_open.call_count == 1
+            mock_sleep.assert_not_called()
+
+    def test_retries_on_429_then_succeeds(self):
+        with patch("pocket_pull.urllib.request.urlopen") as mock_open, \
+             patch("pocket_pull.time.sleep") as mock_sleep:
+            mock_open.side_effect = [
+                make_http_error(429, retry_after="1"),
+                make_http_error(429, retry_after="1"),
+                make_response({"ok": True}),
+            ]
+            req = MagicMock()
+            req.full_url = "http://test/x"
+            result = pocket_pull._request_with_retry(req)
+            assert result == {"ok": True}
+            assert mock_open.call_count == 3
+            assert mock_sleep.call_count == 2
+
+    def test_retries_on_503(self):
+        with patch("pocket_pull.urllib.request.urlopen") as mock_open, \
+             patch("pocket_pull.time.sleep"):
+            mock_open.side_effect = [
+                make_http_error(503),
+                make_response({"ok": True}),
+            ]
+            req = MagicMock()
+            req.full_url = "http://test/x"
+            assert pocket_pull._request_with_retry(req) == {"ok": True}
+            assert mock_open.call_count == 2
+
+    def test_does_not_retry_on_404(self):
+        with patch("pocket_pull.urllib.request.urlopen") as mock_open, \
+             patch("pocket_pull.time.sleep") as mock_sleep:
+            mock_open.side_effect = [make_http_error(404)]
+            req = MagicMock()
+            req.full_url = "http://test/x"
+            with pytest.raises(urllib.error.HTTPError) as exc:
+                pocket_pull._request_with_retry(req)
+            assert exc.value.code == 404
+            assert mock_open.call_count == 1
+            mock_sleep.assert_not_called()
+
+    def test_raises_after_max_retries(self):
+        with patch("pocket_pull.urllib.request.urlopen") as mock_open, \
+             patch("pocket_pull.time.sleep"):
+            mock_open.side_effect = [make_http_error(429) for _ in range(pocket_pull.MAX_RETRIES)]
+            req = MagicMock()
+            req.full_url = "http://test/x"
+            with pytest.raises(urllib.error.HTTPError) as exc:
+                pocket_pull._request_with_retry(req)
+            assert exc.value.code == 429
+            assert mock_open.call_count == pocket_pull.MAX_RETRIES
+
+    def test_honors_retry_after_header(self):
+        with patch("pocket_pull.urllib.request.urlopen") as mock_open, \
+             patch("pocket_pull.time.sleep") as mock_sleep:
+            mock_open.side_effect = [
+                make_http_error(429, retry_after="7"),
+                make_response({"ok": True}),
+            ]
+            req = MagicMock()
+            req.full_url = "http://test/x"
+            pocket_pull._request_with_retry(req)
+            mock_sleep.assert_called_once_with(7.0)
+
+
+class TestPendingFetch:
+    def test_read_missing_returns_empty(self, tmp_path):
+        with patch.object(pocket_pull, "PENDING_FETCH_FILE", tmp_path / ".pending-fetch"):
+            assert pocket_pull.read_pending_fetch() == []
+
+    def test_round_trip(self, tmp_path):
+        path = tmp_path / ".pending-fetch"
+        with patch.object(pocket_pull, "PENDING_FETCH_FILE", path):
+            pocket_pull.write_pending_fetch(["a", "b", "c"])
+            assert pocket_pull.read_pending_fetch() == ["a", "b", "c"]
+
+    def test_write_empty_removes_file(self, tmp_path):
+        path = tmp_path / ".pending-fetch"
+        path.write_text("a\nb\n")
+        with patch.object(pocket_pull, "PENDING_FETCH_FILE", path):
+            pocket_pull.write_pending_fetch([])
+            assert not path.exists()
+
+    def test_read_skips_blank_lines(self, tmp_path):
+        path = tmp_path / ".pending-fetch"
+        path.write_text("a\n\nb\n  \n")
+        with patch.object(pocket_pull, "PENDING_FETCH_FILE", path):
+            assert pocket_pull.read_pending_fetch() == ["a", "b"]
