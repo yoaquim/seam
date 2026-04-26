@@ -243,8 +243,14 @@ function CopyCommand({ command, label }: { command: string; label: string }) {
 
 function AutoSyncSetup() {
   const [open, setOpen] = useState(false);
-  const projectPath =
-    window.location.hostname === "localhost" ? "~/Projects/seam" : "/path/to/seam";
+  const [projectPath, setProjectPath] = useState("/path/to/seam");
+
+  useEffect(() => {
+    fetch("http://localhost:3001/api/info")
+      .then((r) => r.json())
+      .then((data) => setProjectPath(data.root))
+      .catch(() => {});
+  }, []);
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>

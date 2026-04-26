@@ -230,6 +230,11 @@ app.get("/api/sync/history", (_req, res) => {
   res.json({ entries: readSyncHistory() });
 });
 
+// Project info
+app.get("/api/info", (_req, res) => {
+  res.json({ root: ROOT });
+});
+
 // ── People API ───────────────────────────────────────────────
 
 const PEOPLE_FILE = path.join(ROOT, ".seam", "people.json");
@@ -471,8 +476,8 @@ app.delete("/api/recordings/:dirName", (req, res) => {
       rmSync(analysisDir, { recursive: true, force: true });
     }
     addDeleted(dirName);
-  } catch (e: any) {
-    res.status(500).json({ error: e.message });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
     return;
   }
 
