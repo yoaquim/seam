@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { spawn } from "child_process";
-import { readFileSync, writeFileSync, existsSync, rmSync, readdirSync, unlinkSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, rmSync, readdirSync } from "fs";
 import { randomUUID } from "crypto";
 import path from "path";
 
