@@ -148,6 +148,7 @@ const features = [
 function Features() {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
 
   const next = useCallback(() => {
     setActive((prev) => (prev + 1) % features.length);
@@ -219,7 +220,10 @@ function Features() {
 
           {/* Right: screenshot */}
           <div className="md:col-span-3">
-            <div className="rounded-xl border border-border shadow-lg overflow-hidden bg-muted/30">
+            <div
+              className="rounded-xl border border-border shadow-lg overflow-hidden bg-muted/30 cursor-pointer hover:shadow-xl transition-shadow"
+              onClick={() => setLightbox(true)}
+            >
               <img
                 key={current.screenshot}
                 src={`${BASE}screenshots/${current.screenshot}`}
@@ -242,6 +246,25 @@ function Features() {
             </div>
           </div>
         </div>
+
+        {/* Lightbox */}
+        {lightbox && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-pointer p-6"
+            onClick={() => setLightbox(false)}
+          >
+            <div className="relative max-w-6xl w-full animate-in zoom-in-95 fade-in duration-200">
+              <img
+                src={`${BASE}screenshots/${current.screenshot}`}
+                alt={current.name}
+                className="w-full rounded-xl shadow-2xl"
+              />
+              <div className="absolute top-4 right-4 bg-white/90 rounded-full px-3 py-1 text-xs font-medium text-[#2b2b2b]">
+                Click anywhere to close
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
