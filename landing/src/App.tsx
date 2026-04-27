@@ -458,16 +458,12 @@ function QuickStart() {
             <div>
               <span className="text-[#569cd6]">npm</span> install
             </div>
-            <div className="mt-4 text-[#737373]"># Add your Pocket API key</div>
-            <div>
-              <span className="text-[#569cd6]">cp</span> .env.example .env
-            </div>
-            <div className="text-[#6a9955]"># Edit .env → POCKET_API_KEY=pk_your_key</div>
             <div className="mt-4 text-[#737373]"># Start the dashboard</div>
             <div>
               <span className="text-[#569cd6]">npm</span> run dev
             </div>
             <div className="text-[#6a9955]"># Open http://localhost:5173</div>
+            <div className="text-[#6a9955]"># The dashboard will prompt you to add your Pocket API key in Settings</div>
           </div>
         </BlurFade>
       </div>
