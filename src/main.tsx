@@ -7,6 +7,7 @@ import App from "./App";
 import { RecordingDetail } from "./pages/RecordingDetail";
 import { PeoplePage } from "./pages/PeoplePage";
 import { SyncPage } from "./pages/SyncPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 function Layout() {
   return (
@@ -28,6 +29,7 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/recording/:dirName" element={<RecordingDetail />} />
           <Route path="/people" element={<PeoplePage />} />
           <Route path="/sync" element={<SyncPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

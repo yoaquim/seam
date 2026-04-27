@@ -47,6 +47,8 @@
 - **Sync page** — real-time log streaming, sync history with expandable logs, stop/cancel with cleanup
 - **Auto-sync setup** — copy-pasteable crontab and launchd commands on the Sync page
 - **Delete tracking** — deleted recordings won't re-sync
+- **S3 backup (optional)** — sync your `.seam/` data to S3 for backup, configured via the Settings page
+- **Settings page** — configure Pocket API key and S3 backup from the dashboard, with first-run detection
 - **File-based storage** — portable `.seam/` directory, no database required
 - **CI pipeline** — GitHub Actions runs format, lint, build, and test on every PR
 - **Pre-commit hooks** — husky runs Prettier, ESLint, and tests before every commit
@@ -65,17 +67,36 @@ git clone https://github.com/yoaquim/seam.git
 cd seam
 npm install
 
-# Add your Pocket API key
-cp .env.example .env
-# Edit .env → POCKET_API_KEY=pk_your_key_here
-
 # Start the dashboard (API server + frontend)
 npm run dev
 # Open http://localhost:5173
 
+# On first launch, the dashboard will prompt you to add your Pocket API key in Settings.
+# Or manually: cp .env.example .env and edit POCKET_API_KEY=pk_your_key_here
+
 # Click "Sync" in the dashboard to pull and analyze recordings
 # Or run manually: ./scripts/pocket-run.sh
 ```
+
+## S3 Backup (optional)
+
+Seam can sync your `.seam/` data to an S3 bucket for backup. All data stays local by default.
+
+1. Open **Settings** (gear icon in navbar) or go to `/settings`
+2. Enter your S3 bucket name
+3. Optionally set a prefix (defaults to `seam/`) and AWS profile
+4. Click **Test Connection** to verify access
+5. Click **Save** — Seam will sync to S3 after every change
+
+S3 sync is non-blocking — if credentials expire or the bucket is unreachable, the app continues working. Errors appear in the server console. Works with any S3-compatible store (AWS, MinIO, R2, etc.).
+
+| Variable      | Required | Default | Description                          |
+| ------------- | -------- | ------- | ------------------------------------ |
+| `S3_BUCKET`   | No       | —       | S3 bucket name                       |
+| `S3_PREFIX`   | No       | `seam/` | Key prefix for all objects           |
+| `AWS_PROFILE` | No       | —       | AWS profile (for SSO/named profiles) |
+
+Seam uses the [standard AWS credential chain](https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/setting-credentials-node.html): environment variables, `~/.aws/credentials`, SSO, IAM roles, etc.
 
 ## How it works
 
@@ -127,7 +148,8 @@ seam/
 ├── prompts/
 │   └── analyze.md            # Claude analysis prompt template
 ├── server/
-│   └── index.ts              # Express API (sync, people, pending people, actions, speakers, delete)
+│   ├── index.ts              # Express API (sync, people, pending people, actions, speakers, settings)
+│   └── s3.ts                 # S3 sync module (optional backup)
 ├── src/                      # React dashboard
 ├── landing/                  # Landing page (separate Vite app, deployed to GitHub Pages)
 ├── .seam/                    # Local data (gitignored, created on first sync)

@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router";
 import { useRecordings } from "@/hooks/useRecordings";
+import { useSettings } from "@/hooks/useSettings";
 import { RecordingGridCard } from "@/components/RecordingGridCard";
 import { SearchBar } from "@/components/SearchBar";
 import {
@@ -33,6 +35,8 @@ function formatDateHeading(dateStr: string): string {
 
 export default function App() {
   const { recordings, loading, error } = useRecordings();
+  const { settings, loading: settingsLoading } = useSettings();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -99,6 +103,19 @@ export default function App() {
   return (
     <div className="h-full flex flex-col bg-background">
       <main className="flex-1 overflow-hidden flex flex-col max-w-6xl mx-auto px-6 py-6 w-full">
+        {/* First-run banner */}
+        {!settingsLoading && settings && !settings.configured && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 mb-6 flex items-center justify-between">
+            <p className="text-sm text-amber-200">Configure your Pocket API key to get started.</p>
+            <button
+              onClick={() => navigate("/settings")}
+              className="text-sm font-medium text-amber-400 hover:text-amber-300 cursor-pointer transition-colors"
+            >
+              Open Settings &rarr;
+            </button>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[

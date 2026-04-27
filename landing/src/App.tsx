@@ -16,6 +16,7 @@ import {
   Shield,
   ArrowRight,
   Zap,
+  CloudUpload,
   ChevronLeft,
   ChevronRight as ChevronRightIcon,
   X,
@@ -355,6 +356,7 @@ const capabilities = [
   { icon: Copy, text: "Copy actions, decisions, quotes" },
   { icon: RefreshCw, text: "Real-time sync logs & history" },
   { icon: Shield, text: "File-based — your data stays local" },
+  { icon: CloudUpload, text: "Optional S3 backup & sync" },
   { icon: Zap, text: "Colored tags, sort, filter, group" },
 ];
 
