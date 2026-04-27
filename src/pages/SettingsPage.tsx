@@ -47,6 +47,7 @@ function SettingsForm({
   syncing: boolean;
 }) {
   const [apiKey, setApiKey] = useState(settings.pocketApiKey);
+  const [apiKeyEdited, setApiKeyEdited] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const [bucket, setBucket] = useState(settings.s3Bucket);
   const [prefix, setPrefix] = useState(settings.s3Prefix);
@@ -56,13 +57,15 @@ function SettingsForm({
 
   const handleSave = async () => {
     const updates: Record<string, string> = {};
-    if (apiKey !== settings?.pocketApiKey) updates.pocketApiKey = apiKey;
-    if (bucket !== settings?.s3Bucket) updates.s3Bucket = bucket;
-    if (prefix !== settings?.s3Prefix) updates.s3Prefix = prefix;
-    if (profile !== settings?.awsProfile) updates.awsProfile = profile;
+    // Only send API key if the user actually edited the field (value is masked on load)
+    if (apiKeyEdited) updates.pocketApiKey = apiKey;
+    if (bucket !== settings.s3Bucket) updates.s3Bucket = bucket;
+    if (prefix !== settings.s3Prefix) updates.s3Prefix = prefix;
+    if (profile !== settings.awsProfile) updates.awsProfile = profile;
     const ok = await save(updates);
     if (ok) {
       setDirty(false);
+      setApiKeyEdited(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     }
@@ -101,7 +104,10 @@ function SettingsForm({
             <Input
               type={showKey ? "text" : "password"}
               value={apiKey}
-              onChange={(e) => markDirty(setApiKey)(e.target.value)}
+              onChange={(e) => {
+                markDirty(setApiKey)(e.target.value);
+                setApiKeyEdited(true);
+              }}
               placeholder="pk_your_api_key_here"
               className="font-mono text-sm"
             />

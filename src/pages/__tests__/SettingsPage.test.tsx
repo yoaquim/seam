@@ -110,6 +110,35 @@ describe("SettingsPage", () => {
     });
   });
 
+  it("does not send masked API key when only other fields change", async () => {
+    const user = userEvent.setup();
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    fetchSpy
+      .mockResolvedValueOnce({ ok: true, json: async () => mockSettings } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ ...mockSettings, s3Bucket: "test-bucket" }),
+      } as Response);
+
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("Pocket API Key")).toBeInTheDocument();
+    });
+    const bucketInput = screen.getByLabelText("Bucket");
+    await user.type(bucketInput, "test-bucket");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => {
+      const putCall = fetchSpy.mock.calls.find(
+        (c) => c[1] && (c[1] as RequestInit).method === "PUT",
+      );
+      expect(putCall).toBeDefined();
+      const body = JSON.parse((putCall![1] as RequestInit).body as string);
+      expect(body).not.toHaveProperty("pocketApiKey");
+      expect(body).toHaveProperty("s3Bucket", "test-bucket");
+    });
+  });
+
   it("toggles API key visibility", async () => {
     const user = userEvent.setup();
     renderPage();
