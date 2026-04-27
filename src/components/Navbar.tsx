@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router";
 import { Button } from "@/components/ui/button";
 import { useSync } from "@/hooks/useSync";
-import { Users, RefreshCw } from "lucide-react";
+import { Users, RefreshCw, Settings } from "lucide-react";
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -43,6 +43,15 @@ export function Navbar() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
               </span>
             )}
+          </Button>
+          <Button
+            variant={isActive("/settings") ? "default" : "outline"}
+            size="sm"
+            onClick={() => navigate("/settings")}
+            className="gap-1.5"
+          >
+            <Settings className="h-4 w-4" />
+            Settings
           </Button>
         </div>
       </div>

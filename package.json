@@ -19,6 +19,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1037.0",
     "@base-ui/react": "^1.4.1",
     "@fontsource-variable/public-sans": "^5.2.7",
     "@xyflow/react": "^12.10.2",

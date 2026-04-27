@@ -20,7 +20,8 @@ Open-source Pocket AI companion — pulls recordings via API, analyzes with Clau
 - `scripts/stage-people.py` — scans analyses for speaker names, stages for user review
 - `scripts/seed-people.py` — seeds people.json from existing analyses (contributed via PR)
 - `prompts/analyze.md` — prompt template for Claude analysis (includes speaker inference)
-- `server/index.ts` — Express API (sync, people, pending people, actions, speakers, delete)
+- `server/index.ts` — Express API (sync, people, pending people, actions, speakers, settings)
+- `server/s3.ts` — S3 sync module (optional backup, used by server after mutations)
 - `src/` — React dashboard
 - `landing/` — landing page (separate Vite app, builds to `docs/landing/`, deployed via GitHub Pages)
 - `.seam/` — local data directory (gitignored)
@@ -39,7 +40,7 @@ Open-source Pocket AI companion — pulls recordings via API, analyzes with Clau
 
 ## Config
 
-- `.env` — `POCKET_API_KEY=pk_xxx`
+- `.env` — `POCKET_API_KEY=pk_xxx`, plus optional `S3_BUCKET`, `S3_PREFIX`, `AWS_PROFILE`
 - `.pocket-last-sync` — timestamp of last successful sync (auto-managed)
 - `.seam/generic-speakers.txt` — user-defined speaker exclusion list (one per line)
 

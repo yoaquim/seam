@@ -4,12 +4,18 @@ import { spawn } from "child_process";
 import { readFileSync, writeFileSync, existsSync, rmSync, readdirSync } from "fs";
 import { randomUUID } from "crypto";
 import path from "path";
+import { S3Sync } from "./s3.js";
 
 const app = express();
 const PORT = 3001;
 const ROOT = path.resolve(import.meta.dirname, "..");
 const SYNC_FILE = path.join(ROOT, ".pocket-last-sync");
 const SYNC_HISTORY_FILE = path.join(ROOT, ".seam", "sync-history.json");
+const ENV_FILE = path.join(ROOT, ".env");
+
+// S3 sync (optional — no-op if not configured)
+const s3 = new S3Sync(ROOT);
+s3.configure();
 
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
@@ -163,6 +169,7 @@ app.post("/api/sync", (_req, res) => {
     } else if (code === 0) {
       state.status = "done";
       appendLog("Sync completed successfully.");
+      s3.fullSync().catch((err) => console.warn("S3 post-sync failed:", err));
     } else {
       state.status = "error";
       state.error = `Process exited with code ${code}`;
@@ -299,6 +306,7 @@ app.post("/api/people", (req, res) => {
   };
   people.push(person);
   writePeople(people);
+  s3.syncFiles("people.json");
   res.status(201).json(person);
 });
 
@@ -323,6 +331,7 @@ app.put("/api/people/:id", (req, res) => {
       ? personTags.map((t: string) => t.trim()).filter(Boolean)
       : undefined;
   writePeople(people);
+  s3.syncFiles("people.json");
   res.json(people[idx]);
 });
 
@@ -334,6 +343,7 @@ app.delete("/api/people/:id", (req, res) => {
     return;
   }
   writePeople(filtered);
+  s3.syncFiles("people.json");
   res.json({ ok: true });
 });
 
@@ -393,6 +403,7 @@ app.post("/api/people/pending/:id/confirm", (_req, res) => {
   writePeople(people);
   pending.splice(idx, 1);
   writePending(pending);
+  s3.syncFiles("people.json", "people-pending.json");
   res.json(person);
 });
 
@@ -424,6 +435,7 @@ app.post("/api/people/pending/:id/merge", (req, res) => {
   writePeople(people);
   pending.splice(idx, 1);
   writePending(pending);
+  s3.syncFiles("people.json", "people-pending.json");
   res.json(target);
 });
 
@@ -439,6 +451,7 @@ app.post("/api/people/pending/:id/dismiss", (req, res) => {
   addDismissed(entry.name);
   pending.splice(idx, 1);
   writePending(pending);
+  s3.syncFiles("dismissed-speakers.txt", "people-pending.json");
   res.json({ ok: true });
 });
 
@@ -481,6 +494,11 @@ app.delete("/api/recordings/:dirName", (req, res) => {
     return;
   }
 
+  // S3: delete remote copies and sync .deleted tracking file
+  s3.deletePrefix(`recordings/${dirName}`);
+  s3.deletePrefix(`analysis/${dirName}`);
+  s3.syncFiles(".deleted");
+
   // Rebuild manifest
   const buildScript = path.join(ROOT, "scripts", "build-manifest.py");
   spawn("python3", [buildScript], { cwd: ROOT });
@@ -504,6 +522,7 @@ app.put("/api/recordings/:dirName/actions/:index", (req, res) => {
   if (data.action_items?.[i]) {
     data.action_items[i].completed = completed;
     writeFileSync(analysisFile, JSON.stringify(data, null, 2));
+    s3.syncFiles(`analysis/${dirName}/analysis.json`);
 
     // Rebuild manifest
     const buildScript = path.join(ROOT, "scripts", "build-manifest.py");
@@ -535,12 +554,115 @@ app.put("/api/recordings/:dirName/speakers", (req, res) => {
     }
   }
   writeFileSync(recFile, JSON.stringify(data, null, 2));
+  s3.syncFiles(`recordings/${dirName}/recording.json`);
 
   // Rebuild manifest
   const buildScript = path.join(ROOT, "scripts", "build-manifest.py");
   spawn("python3", [buildScript], { cwd: ROOT });
 
   res.json({ ok: true });
+});
+
+// ── Settings API ────────────────────────────────────────────
+
+function readEnvFile(): Record<string, string> {
+  const result: Record<string, string> = {};
+  if (!existsSync(ENV_FILE)) return result;
+  try {
+    for (const line of readFileSync(ENV_FILE, "utf-8").split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eqIdx = trimmed.indexOf("=");
+      if (eqIdx === -1) continue;
+      const key = trimmed.slice(0, eqIdx).trim();
+      const value = trimmed
+        .slice(eqIdx + 1)
+        .trim()
+        .replace(/^['"]|['"]$/g, "");
+      result[key] = value;
+    }
+  } catch {}
+  return result;
+}
+
+function maskKey(key: string): string {
+  if (key.length <= 7) return "***";
+  return key.slice(0, 3) + "***" + key.slice(-4);
+}
+
+function writeEnvFile(updates: Record<string, string>) {
+  let lines: string[] = [];
+  if (existsSync(ENV_FILE)) {
+    lines = readFileSync(ENV_FILE, "utf-8").split("\n");
+  }
+  const updated = new Set<string>();
+  // Update existing lines
+  lines = lines.map((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) return line;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx === -1) return line;
+    const key = trimmed.slice(0, eqIdx).trim();
+    if (key in updates) {
+      updated.add(key);
+      return `${key}=${updates[key]}`;
+    }
+    return line;
+  });
+  // Append new keys
+  for (const [key, value] of Object.entries(updates)) {
+    if (!updated.has(key)) {
+      lines.push(`${key}=${value}`);
+    }
+  }
+  // Remove trailing empty lines, ensure single newline at end
+  while (lines.length > 0 && lines[lines.length - 1].trim() === "") lines.pop();
+  writeFileSync(ENV_FILE, lines.join("\n") + "\n");
+}
+
+app.get("/api/settings", (_req, res) => {
+  const env = readEnvFile();
+  res.json({
+    configured: !!env["POCKET_API_KEY"],
+    pocketApiKey: env["POCKET_API_KEY"] ? maskKey(env["POCKET_API_KEY"]) : "",
+    s3Bucket: env["S3_BUCKET"] || "",
+    s3Prefix: env["S3_PREFIX"] || "seam/",
+    awsProfile: env["AWS_PROFILE"] || "",
+  });
+});
+
+app.put("/api/settings", (req, res) => {
+  const { pocketApiKey, s3Bucket, s3Prefix, awsProfile } = req.body as {
+    pocketApiKey?: string;
+    s3Bucket?: string;
+    s3Prefix?: string;
+    awsProfile?: string;
+  };
+  const updates: Record<string, string> = {};
+  if (pocketApiKey !== undefined) updates["POCKET_API_KEY"] = pocketApiKey;
+  if (s3Bucket !== undefined) updates["S3_BUCKET"] = s3Bucket;
+  if (s3Prefix !== undefined) updates["S3_PREFIX"] = s3Prefix;
+  if (awsProfile !== undefined) updates["AWS_PROFILE"] = awsProfile;
+  writeEnvFile(updates);
+  s3.configure();
+  const env = readEnvFile();
+  res.json({
+    configured: !!env["POCKET_API_KEY"],
+    pocketApiKey: env["POCKET_API_KEY"] ? maskKey(env["POCKET_API_KEY"]) : "",
+    s3Bucket: env["S3_BUCKET"] || "",
+    s3Prefix: env["S3_PREFIX"] || "seam/",
+    awsProfile: env["AWS_PROFILE"] || "",
+  });
+});
+
+app.post("/api/s3/test", async (_req, res) => {
+  const result = await s3.testConnection();
+  res.json(result);
+});
+
+app.post("/api/s3/sync", (_req, res) => {
+  s3.fullSync().catch((err) => console.warn("S3 manual sync failed:", err));
+  res.json({ status: "started" });
 });
 
 app.listen(PORT, () => {
