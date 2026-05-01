@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSync } from "@/hooks/useSync";
 import { Users, RefreshCw, Settings } from "lucide-react";
 
@@ -44,6 +45,7 @@ export function Navbar() {
               </span>
             )}
           </Button>
+          <ThemeToggle />
           <Button
             variant={isActive("/settings") ? "default" : "outline"}
             size="sm"

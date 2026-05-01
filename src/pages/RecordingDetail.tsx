@@ -276,7 +276,7 @@ export function RecordingDetail() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 border-b border-[#e0e0e0] -mx-6 px-6">
+        <div className="flex gap-2 border-b border-border -mx-6 px-6">
           {TABS.map(({ id, label, icon: Icon, color }) => (
             <button
               key={id}

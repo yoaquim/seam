@@ -5,7 +5,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
+@theme {
   /* White + #2b2b2b palette */
   --color-background: #ffffff;
   --color-foreground: #2b2b2b;
@@ -48,6 +48,32 @@
 }
 
 @layer base {
+  .dark {
+    --color-background: #1a1a1a;
+    --color-foreground: #f5f5f5;
+    --color-card: #232323;
+    --color-card-foreground: #f5f5f5;
+    --color-popover: #232323;
+    --color-popover-foreground: #f5f5f5;
+    --color-primary: #f5f5f5;
+    --color-primary-foreground: #1a1a1a;
+    --color-secondary: #2b2b2b;
+    --color-secondary-foreground: #f5f5f5;
+    --color-muted: #2b2b2b;
+    --color-muted-foreground: #a3a3a3;
+    --color-accent: #2b2b2b;
+    --color-accent-foreground: #f5f5f5;
+    --color-destructive: #ef4444;
+    --color-destructive-foreground: #ef4444;
+    --color-border: #404040;
+    --color-input: #404040;
+    --color-ring: #d4d4d4;
+    --color-chart-1: #f5f5f5;
+    --color-chart-2: #d4d4d4;
+    --color-chart-3: #a3a3a3;
+    --color-chart-4: #737373;
+    --color-chart-5: #404040;
+  }
   * {
     @apply border-border outline-ring/50;
   }

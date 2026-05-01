@@ -36,21 +36,30 @@ function StatusBadge({ status }: { status: SyncStatus }) {
   switch (status) {
     case "running":
       return (
-        <Badge variant="secondary" className="bg-amber-100 text-amber-800 gap-1">
+        <Badge
+          variant="secondary"
+          className="bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 gap-1"
+        >
           <RefreshCw className="h-3 w-3 animate-spin" />
           Running
         </Badge>
       );
     case "done":
       return (
-        <Badge variant="secondary" className="bg-green-100 text-green-800 gap-1">
+        <Badge
+          variant="secondary"
+          className="bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300 gap-1"
+        >
           <CheckCircle2 className="h-3 w-3" />
           Done
         </Badge>
       );
     case "error":
       return (
-        <Badge variant="secondary" className="bg-red-100 text-red-800 gap-1">
+        <Badge
+          variant="secondary"
+          className="bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300 gap-1"
+        >
           <XCircle className="h-3 w-3" />
           Error
         </Badge>
@@ -134,7 +143,7 @@ export function SyncPanel({
         </div>
 
         {error && (
-          <div className="text-sm text-red-600 bg-red-50 rounded-md p-3 border border-red-200">
+          <div className="text-sm text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-950/40 rounded-md p-3 border border-red-200 dark:border-red-900">
             {error}
           </div>
         )}
@@ -147,10 +156,10 @@ export function SyncPanel({
           Logs
           {logs.length > 0 && <span>({logs.length} lines)</span>}
         </div>
-        <ScrollArea className="h-64 rounded-md border bg-[#1e1e1e] p-3">
-          <pre className="text-xs font-mono text-[#d4d4d4] whitespace-pre-wrap">
+        <ScrollArea className="h-64 rounded-md border bg-neutral-900 p-3">
+          <pre className="text-xs font-mono text-neutral-300 whitespace-pre-wrap">
             {logs.length === 0 ? (
-              <span className="text-[#737373]">No logs yet. Click sync to start.</span>
+              <span className="text-neutral-500">No logs yet. Click sync to start.</span>
             ) : (
               logs.map((line, i) => (
                 <div
@@ -159,7 +168,7 @@ export function SyncPanel({
                     line.startsWith("[stderr]")
                       ? "text-red-400"
                       : line.includes("===")
-                        ? "text-[#569cd6] font-bold"
+                        ? "text-sky-400 font-bold"
                         : line.includes("ERROR")
                           ? "text-red-400"
                           : line.includes("Done") || line.includes("completed")

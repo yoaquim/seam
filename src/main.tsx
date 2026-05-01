@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router";
 import "./index.css";
 import { Navbar } from "./components/Navbar";
+import { ThemeProvider } from "./components/ThemeProvider";
 import App from "./App";
 import { RecordingDetail } from "./pages/RecordingDetail";
 import { PeoplePage } from "./pages/PeoplePage";
@@ -22,16 +23,18 @@ function Layout() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<App />} />
-          <Route path="/recording/:dirName" element={<RecordingDetail />} />
-          <Route path="/people" element={<PeoplePage />} />
-          <Route path="/sync" element={<SyncPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<App />} />
+            <Route path="/recording/:dirName" element={<RecordingDetail />} />
+            <Route path="/people" element={<PeoplePage />} />
+            <Route path="/sync" element={<SyncPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   </StrictMode>,
 );

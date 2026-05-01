@@ -153,7 +153,10 @@ export function PeoplePage() {
             </div>
             <div className="space-y-2">
               {pending.map((p) => (
-                <Card key={p.id} className="border-amber-200 bg-amber-50/30">
+                <Card
+                  key={p.id}
+                  className="border-amber-200 bg-amber-50/30 dark:border-amber-900/60 dark:bg-amber-950/20"
+                >
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex-1 min-w-0">
@@ -167,7 +170,7 @@ export function PeoplePage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="gap-1 text-green-700 hover:text-green-800 hover:bg-green-50"
+                          className="gap-1 text-green-700 hover:text-green-800 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-950/30"
                           onClick={async () => {
                             await confirmPending(p.id);
                             refreshPeople();
