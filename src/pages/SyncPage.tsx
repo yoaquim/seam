@@ -58,8 +58,8 @@ function formatDate(iso: string): string {
 
 function LogViewer({ logs }: { logs: string[] }) {
   return (
-    <div className="rounded-md border bg-[#1e1e1e] p-3 mt-2 max-h-64 overflow-y-auto">
-      <pre className="text-xs font-mono text-[#d4d4d4] whitespace-pre-wrap">
+    <div className="rounded-md border bg-neutral-900 p-3 mt-2 max-h-64 overflow-y-auto">
+      <pre className="text-xs font-mono text-neutral-300 whitespace-pre-wrap">
         {logs.map((line, i) => (
           <div
             key={i}
@@ -67,7 +67,7 @@ function LogViewer({ logs }: { logs: string[] }) {
               line.startsWith("[stderr]")
                 ? "text-red-400"
                 : line.includes("===")
-                  ? "text-[#569cd6] font-bold"
+                  ? "text-sky-400 font-bold"
                   : line.includes("ERROR")
                     ? "text-red-400"
                     : line.includes("Done") ||
@@ -107,11 +107,11 @@ function LiveSync({ sync }: { sync: ReturnType<typeof useSync> }) {
               variant="secondary"
               className={
                 sync.status === "running"
-                  ? "bg-amber-100 text-amber-800"
+                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
                   : sync.status === "done"
-                    ? "bg-green-100 text-green-800"
+                    ? "bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300"
                     : sync.status === "error"
-                      ? "bg-red-100 text-red-800"
+                      ? "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300"
                       : ""
               }
             >
@@ -129,10 +129,10 @@ function LiveSync({ sync }: { sync: ReturnType<typeof useSync> }) {
           )}
         </div>
 
-        <div className="rounded-md border bg-[#1e1e1e] p-3 max-h-80 overflow-y-auto">
-          <pre className="text-xs font-mono text-[#d4d4d4] whitespace-pre-wrap">
+        <div className="rounded-md border bg-neutral-900 p-3 max-h-80 overflow-y-auto">
+          <pre className="text-xs font-mono text-neutral-300 whitespace-pre-wrap">
             {sync.logs.length === 0 ? (
-              <span className="text-[#737373]">Waiting for output...</span>
+              <span className="text-neutral-500">Waiting for output...</span>
             ) : (
               sync.logs.map((line, i) => (
                 <div
@@ -141,7 +141,7 @@ function LiveSync({ sync }: { sync: ReturnType<typeof useSync> }) {
                     line.startsWith("[stderr]")
                       ? "text-red-400"
                       : line.includes("===")
-                        ? "text-[#569cd6] font-bold"
+                        ? "text-sky-400 font-bold"
                         : line.includes("ERROR")
                           ? "text-red-400"
                           : line.includes("Done") ||
@@ -160,7 +160,7 @@ function LiveSync({ sync }: { sync: ReturnType<typeof useSync> }) {
         </div>
 
         {sync.error && (
-          <div className="text-sm text-red-600 bg-red-50 rounded-md p-3 mt-3 border border-red-200">
+          <div className="text-sm text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-950/40 rounded-md p-3 mt-3 border border-red-200 dark:border-red-900">
             {sync.error}
           </div>
         )}
@@ -223,7 +223,7 @@ function CopyCommand({ command, label }: { command: string; label: string }) {
     <div className="space-y-1">
       <span className="text-xs text-muted-foreground">{label}</span>
       <div className="flex items-center gap-2">
-        <code className="flex-1 text-xs bg-[#1e1e1e] text-[#d4d4d4] p-2 rounded font-mono overflow-x-auto">
+        <code className="flex-1 text-xs bg-neutral-900 text-neutral-300 p-2 rounded font-mono overflow-x-auto">
           {command}
         </code>
         <button
@@ -378,9 +378,12 @@ export function SyncPage() {
             { label: "Failed", value: errorCount },
             { label: "Avg Duration", value: `${avgDuration}s` },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-lg border bg-[#2b2b2b] p-3 text-center">
-              <div className="text-xl font-bold text-white">{stat.value}</div>
-              <div className="text-xs text-[#a3a3a3]">{stat.label}</div>
+            <div
+              key={stat.label}
+              className="rounded-lg border bg-primary p-3 text-center text-primary-foreground"
+            >
+              <div className="text-xl font-bold">{stat.value}</div>
+              <div className="text-xs opacity-70">{stat.label}</div>
             </div>
           ))}
         </div>

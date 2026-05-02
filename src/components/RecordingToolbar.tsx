@@ -116,13 +116,16 @@ export function RecordingToolbar({
 
       {/* Tag filter */}
       {tags.length > 0 && (
-        <div className="flex items-center gap-1.5 text-sm">
-          <Tag className="h-3 w-3 text-muted-foreground" />
+        <div
+          data-testid="tag-filter-row"
+          className="flex items-center gap-1.5 text-sm w-full overflow-x-auto flex-nowrap whitespace-nowrap pb-1"
+        >
+          <Tag className="h-3 w-3 text-muted-foreground shrink-0" />
           {tags.map((tag) => (
             <Badge
               key={tag}
               variant={filterTag === tag ? "default" : "secondary"}
-              className={`cursor-pointer text-xs ${filterTag === tag ? "" : tagClassName(tag)}`}
+              className={`cursor-pointer text-xs shrink-0 ${filterTag === tag ? "" : tagClassName(tag)}`}
               onClick={() => onFilterTagChange(filterTag === tag ? "" : tag)}
             >
               {tag}

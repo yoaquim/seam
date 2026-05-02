@@ -124,9 +124,12 @@ export default function App() {
             { label: "Action Items", value: stats.totalActions },
             { label: "Open Questions", value: stats.openQuestions },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-lg border bg-[#2b2b2b] p-4 text-center">
-              <div className="text-2xl font-bold text-white">{stat.value}</div>
-              <div className="text-xs text-[#a3a3a3]">{stat.label}</div>
+            <div
+              key={stat.label}
+              className="rounded-lg border bg-primary p-4 text-center text-primary-foreground"
+            >
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <div className="text-xs opacity-70">{stat.label}</div>
             </div>
           ))}
         </div>
