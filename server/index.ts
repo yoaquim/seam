@@ -1,13 +1,14 @@
 import express from "express";
 import cors from "cors";
 import { spawn } from "child_process";
-import { readFileSync, writeFileSync, existsSync, rmSync, readdirSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, rmSync, readdirSync, mkdirSync } from "fs";
 import { randomUUID } from "crypto";
 import path from "path";
 import { S3Sync } from "./s3.js";
 
 const app = express();
-const PORT = 3001;
+// Port: explicit PORT env var → 3001 (preferred) → OS-assigned (0) if 3001 is busy
+const PREFERRED_PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 const ROOT = path.resolve(import.meta.dirname, "..");
 const SYNC_FILE = path.join(ROOT, ".pocket-last-sync");
 const SYNC_HISTORY_FILE = path.join(ROOT, ".seam", "sync-history.json");
@@ -17,7 +18,16 @@ const ENV_FILE = path.join(ROOT, ".env");
 const s3 = new S3Sync(ROOT);
 s3.configure();
 
-app.use(cors({ origin: "http://localhost:5173" }));
+// Allow any localhost origin so multiple worktrees / Vite ports work.
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (/^http:\/\/localhost:\d+$/.test(origin)) return cb(null, true);
+      return cb(null, false);
+    },
+  }),
+);
 app.use(express.json());
 
 interface SyncState {
@@ -628,21 +638,24 @@ app.get("/api/settings", (_req, res) => {
     s3Bucket: env["S3_BUCKET"] || "",
     s3Prefix: env["S3_PREFIX"] || "seam/",
     awsProfile: env["AWS_PROFILE"] || "",
+    analysisModel: env["SEAM_ANALYSIS_MODEL"] || "",
   });
 });
 
 app.put("/api/settings", (req, res) => {
-  const { pocketApiKey, s3Bucket, s3Prefix, awsProfile } = req.body as {
+  const { pocketApiKey, s3Bucket, s3Prefix, awsProfile, analysisModel } = req.body as {
     pocketApiKey?: string;
     s3Bucket?: string;
     s3Prefix?: string;
     awsProfile?: string;
+    analysisModel?: string;
   };
   const updates: Record<string, string> = {};
   if (pocketApiKey !== undefined) updates["POCKET_API_KEY"] = pocketApiKey;
   if (s3Bucket !== undefined) updates["S3_BUCKET"] = s3Bucket;
   if (s3Prefix !== undefined) updates["S3_PREFIX"] = s3Prefix;
   if (awsProfile !== undefined) updates["AWS_PROFILE"] = awsProfile;
+  if (analysisModel !== undefined) updates["SEAM_ANALYSIS_MODEL"] = analysisModel;
   writeEnvFile(updates);
   s3.configure();
   const env = readEnvFile();
@@ -652,6 +665,7 @@ app.put("/api/settings", (req, res) => {
     s3Bucket: env["S3_BUCKET"] || "",
     s3Prefix: env["S3_PREFIX"] || "seam/",
     awsProfile: env["AWS_PROFILE"] || "",
+    analysisModel: env["SEAM_ANALYSIS_MODEL"] || "",
   });
 });
 
@@ -665,6 +679,40 @@ app.post("/api/s3/sync", (_req, res) => {
   res.json({ status: "started" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Seam API running on http://localhost:${PORT}`);
-});
+const PORT_FILE = path.join(ROOT, ".seam", "api-port");
+
+function listen(port: number, fallbackToRandom: boolean) {
+  const server = app.listen(port, () => {
+    const addr = server.address();
+    const actualPort = typeof addr === "object" && addr ? addr.port : port;
+    // Write port file for the Vite proxy and other tooling to discover us
+    try {
+      mkdirSync(path.dirname(PORT_FILE), { recursive: true });
+      writeFileSync(PORT_FILE, String(actualPort));
+    } catch (e) {
+      console.warn(`Failed to write port file: ${(e as Error).message}`);
+    }
+    console.log(`Seam API running on http://localhost:${actualPort}`);
+    console.log(`SEAM_API_PORT=${actualPort}`);
+  });
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE" && fallbackToRandom) {
+      console.warn(`Port ${port} in use — falling back to a free port.`);
+      listen(0, false);
+    } else {
+      console.error(`Failed to bind: ${err.message}`);
+      process.exit(1);
+    }
+  });
+  // Clean up port file on exit
+  const cleanup = () => {
+    try {
+      rmSync(PORT_FILE, { force: true });
+    } catch {}
+    process.exit(0);
+  };
+  process.on("SIGINT", cleanup);
+  process.on("SIGTERM", cleanup);
+}
+
+listen(PREFERRED_PORT, true);

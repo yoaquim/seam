@@ -212,7 +212,7 @@ export function RecordingDetail() {
   const handleDelete = async () => {
     if (!confirm(`Delete "${recording.data.title}"? This cannot be undone.`)) return;
     try {
-      await fetch(`http://localhost:3001/api/recordings/${dirName}`, { method: "DELETE" });
+      await fetch(`/api/recordings/${dirName}`, { method: "DELETE" });
       navigate("/");
     } catch (e) {
       console.error("Failed to delete:", e);
@@ -434,7 +434,7 @@ function ActionsTab({ analysis, dirName }: ActionsTabProps) {
       return next;
     });
     try {
-      await fetch(`http://localhost:3001/api/recordings/${dirName}/actions/${index}`, {
+      await fetch(`/api/recordings/${dirName}/actions/${index}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ completed: newState }),
@@ -641,7 +641,7 @@ function TranscriptTab({ segments, speakerMap, people, dirName }: TranscriptTabP
   const applySpeakerAssignment = async (assignments: Record<number, string>) => {
     setLocalSpeakerMap((prev) => ({ ...prev, ...assignments }));
     try {
-      await fetch(`http://localhost:3001/api/recordings/${dirName}/speakers`, {
+      await fetch(`/api/recordings/${dirName}/speakers`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assignments }),

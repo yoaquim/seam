@@ -180,7 +180,7 @@ export default function App() {
                         key={recording.dirName}
                         recording={recording}
                         onDelete={async (dirName) => {
-                          await fetch(`http://localhost:3001/api/recordings/${dirName}`, {
+                          await fetch(`/api/recordings/${dirName}`, {
                             method: "DELETE",
                           });
                           window.location.reload();

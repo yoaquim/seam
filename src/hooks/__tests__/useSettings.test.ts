@@ -8,6 +8,7 @@ const mockSettings = {
   s3Bucket: "my-bucket",
   s3Prefix: "seam/",
   awsProfile: "",
+  analysisModel: "",
 };
 
 beforeEach(() => {
@@ -30,7 +31,7 @@ describe("useSettings", () => {
     });
 
     expect(result.current.settings).toEqual(mockSettings);
-    expect(fetch).toHaveBeenCalledWith("http://localhost:3001/api/settings");
+    expect(fetch).toHaveBeenCalledWith("/api/settings");
   });
 
   it("save calls PUT and updates state", async () => {
@@ -51,7 +52,7 @@ describe("useSettings", () => {
       expect(result.current.settings?.s3Bucket).toBe("new-bucket");
     });
     expect(fetch).toHaveBeenLastCalledWith(
-      "http://localhost:3001/api/settings",
+      "/api/settings",
       expect.objectContaining({ method: "PUT" }),
     );
   });
@@ -74,6 +75,28 @@ describe("useSettings", () => {
     });
   });
 
+  it("save sends analysisModel and updates state", async () => {
+    const updated = { ...mockSettings, analysisModel: "claude-sonnet-4-6" };
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({ ok: true, json: async () => mockSettings } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => updated } as Response);
+
+    const { result } = renderHook(() => useSettings());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await waitFor(async () => {
+      await result.current.save({ analysisModel: "claude-sonnet-4-6" });
+    });
+    await waitFor(() => {
+      expect(result.current.settings?.analysisModel).toBe("claude-sonnet-4-6");
+    });
+    const putCall = fetchSpy.mock.calls.find((c) => c[1] && (c[1] as RequestInit).method === "PUT");
+    expect(putCall).toBeDefined();
+    const body = JSON.parse((putCall![1] as RequestInit).body as string);
+    expect(body).toEqual({ analysisModel: "claude-sonnet-4-6" });
+  });
+
   it("triggerSync calls POST /api/s3/sync", async () => {
     vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce({ ok: true, json: async () => mockSettings } as Response)
@@ -83,6 +106,6 @@ describe("useSettings", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     await result.current.triggerSync();
-    expect(fetch).toHaveBeenLastCalledWith("http://localhost:3001/api/s3/sync", { method: "POST" });
+    expect(fetch).toHaveBeenLastCalledWith("/api/s3/sync", { method: "POST" });
   });
 });

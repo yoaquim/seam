@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Person } from "@/types/people";
 
-const API = "http://localhost:3001";
+const API = "";
 
 export function usePeople() {
   const [people, setPeople] = useState<Person[]>([]);

@@ -14,7 +14,23 @@ import {
   CheckCircle2,
   XCircle,
   RefreshCw,
+  Sparkles,
 } from "lucide-react";
+
+const MODEL_OPTIONS: { value: string; label: string; hint?: string }[] = [
+  { value: "", label: "Default (Claude Code's choice)" },
+  { value: "claude-opus-4-7", label: "Opus 4.7", hint: "Most capable, slowest, most expensive" },
+  {
+    value: "claude-sonnet-4-6",
+    label: "Sonnet 4.6",
+    hint: "Recommended — balanced quality and cost",
+  },
+  {
+    value: "claude-haiku-4-5-20251001",
+    label: "Haiku 4.5",
+    hint: "Fastest and cheapest, may miss subtle details",
+  },
+];
 
 export function SettingsPage() {
   const { settings, loading, saving, save, testConnection, testResult, triggerSync, syncing } =
@@ -49,6 +65,7 @@ function SettingsForm({
     s3Bucket?: string;
     s3Prefix?: string;
     awsProfile?: string;
+    analysisModel?: string;
   }) => Promise<boolean | undefined>;
   testConnection: () => Promise<{ ok: boolean; error?: string }>;
   testResult: { ok: boolean; error?: string } | null;
@@ -61,6 +78,7 @@ function SettingsForm({
   const [bucket, setBucket] = useState(settings.s3Bucket);
   const [prefix, setPrefix] = useState(settings.s3Prefix);
   const [profile, setProfile] = useState(settings.awsProfile);
+  const [analysisModel, setAnalysisModel] = useState(settings.analysisModel);
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -71,6 +89,7 @@ function SettingsForm({
     if (bucket !== settings.s3Bucket) updates.s3Bucket = bucket;
     if (prefix !== settings.s3Prefix) updates.s3Prefix = prefix;
     if (profile !== settings.awsProfile) updates.awsProfile = profile;
+    if (analysisModel !== settings.analysisModel) updates.analysisModel = analysisModel;
     const ok = await save(updates);
     if (ok) {
       setDirty(false);
@@ -99,7 +118,7 @@ function SettingsForm({
               Settings
             </h1>
             <p className="text-xs text-muted-foreground">
-              Configure your Pocket API key and optional S3 backup
+              Configure your Pocket API key, Claude model, and optional S3 backup
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -152,6 +171,52 @@ function SettingsForm({
                 >
                   {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Claude Model */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" />
+              Claude Model
+            </h2>
+            <Badge variant="outline" className="text-xs">
+              Optional
+            </Badge>
+          </div>
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Model used by Claude Code when analyzing recordings. Leave as Default to use
+                whatever model your Claude Code CLI is configured for.
+              </p>
+              <div>
+                <label
+                  htmlFor="analysis-model"
+                  className="text-xs text-muted-foreground block mb-1"
+                >
+                  Analysis model
+                </label>
+                <select
+                  id="analysis-model"
+                  value={analysisModel}
+                  onChange={(e) => markDirty(setAnalysisModel)(e.target.value)}
+                  className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 cursor-pointer dark:bg-input/30"
+                >
+                  {MODEL_OPTIONS.map((opt) => (
+                    <option key={opt.value || "default"} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                {MODEL_OPTIONS.find((o) => o.value === analysisModel)?.hint && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {MODEL_OPTIONS.find((o) => o.value === analysisModel)?.hint}
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>

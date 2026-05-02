@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-const API = "http://localhost:3001";
+const API = "";
 
 export interface Settings {
   configured: boolean;
@@ -8,6 +8,7 @@ export interface Settings {
   s3Bucket: string;
   s3Prefix: string;
   awsProfile: string;
+  analysisModel: string;
 }
 
 export function useSettings() {
@@ -37,6 +38,7 @@ export function useSettings() {
       s3Bucket?: string;
       s3Prefix?: string;
       awsProfile?: string;
+      analysisModel?: string;
     }) => {
       setSaving(true);
       try {

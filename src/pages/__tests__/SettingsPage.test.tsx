@@ -10,6 +10,7 @@ const mockSettings = {
   s3Bucket: "",
   s3Prefix: "seam/",
   awsProfile: "",
+  analysisModel: "",
 };
 
 function renderPage() {
@@ -47,7 +48,7 @@ describe("SettingsPage", () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText("S3 Backup")).toBeInTheDocument();
-      expect(screen.getByText("Optional")).toBeInTheDocument();
+      expect(screen.getAllByText("Optional").length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -104,7 +105,7 @@ describe("SettingsPage", () => {
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledWith(
-        "http://localhost:3001/api/settings",
+        "/api/settings",
         expect.objectContaining({ method: "PUT" }),
       );
     });
@@ -136,6 +137,43 @@ describe("SettingsPage", () => {
       const body = JSON.parse((putCall![1] as RequestInit).body as string);
       expect(body).not.toHaveProperty("pocketApiKey");
       expect(body).toHaveProperty("s3Bucket", "test-bucket");
+    });
+  });
+
+  it("shows Claude Model section with default option selected when unset", async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("Claude Model")).toBeInTheDocument();
+    });
+    const select = screen.getByLabelText(/analysis model/i) as HTMLSelectElement;
+    expect(select.value).toBe("");
+  });
+
+  it("sends analysisModel on save when changed", async () => {
+    const user = userEvent.setup();
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    fetchSpy
+      .mockResolvedValueOnce({ ok: true, json: async () => mockSettings } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ ...mockSettings, analysisModel: "claude-sonnet-4-6" }),
+      } as Response);
+
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("Claude Model")).toBeInTheDocument();
+    });
+    const select = screen.getByLabelText(/analysis model/i);
+    await user.selectOptions(select, "claude-sonnet-4-6");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => {
+      const putCall = fetchSpy.mock.calls.find(
+        (c) => c[1] && (c[1] as RequestInit).method === "PUT",
+      );
+      expect(putCall).toBeDefined();
+      const body = JSON.parse((putCall![1] as RequestInit).body as string);
+      expect(body).toHaveProperty("analysisModel", "claude-sonnet-4-6");
     });
   });
 
