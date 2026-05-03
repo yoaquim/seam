@@ -69,16 +69,18 @@ function createApp(envFile: string) {
       s3Bucket: env["S3_BUCKET"] || "",
       s3Prefix: env["S3_PREFIX"] || "seam/",
       awsProfile: env["AWS_PROFILE"] || "",
+      analysisModel: env["SEAM_ANALYSIS_MODEL"] || "",
     });
   });
 
   app.put("/api/settings", (req, res) => {
-    const { pocketApiKey, s3Bucket, s3Prefix, awsProfile } = req.body;
+    const { pocketApiKey, s3Bucket, s3Prefix, awsProfile, analysisModel } = req.body;
     const updates: Record<string, string> = {};
     if (pocketApiKey !== undefined) updates["POCKET_API_KEY"] = pocketApiKey;
     if (s3Bucket !== undefined) updates["S3_BUCKET"] = s3Bucket;
     if (s3Prefix !== undefined) updates["S3_PREFIX"] = s3Prefix;
     if (awsProfile !== undefined) updates["AWS_PROFILE"] = awsProfile;
+    if (analysisModel !== undefined) updates["SEAM_ANALYSIS_MODEL"] = analysisModel;
     writeEnvUpdate(updates);
     const env = readEnvFile();
     res.json({
@@ -87,6 +89,7 @@ function createApp(envFile: string) {
       s3Bucket: env["S3_BUCKET"] || "",
       s3Prefix: env["S3_PREFIX"] || "seam/",
       awsProfile: env["AWS_PROFILE"] || "",
+      analysisModel: env["SEAM_ANALYSIS_MODEL"] || "",
     });
   });
 
@@ -147,6 +150,20 @@ describe("GET /api/settings", () => {
     expect(res.body.s3Prefix).toBe("custom/");
     expect(res.body.awsProfile).toBe("dev");
   });
+
+  it("returns empty analysisModel when not set", async () => {
+    writeFileSync(envFile, "POCKET_API_KEY=pk_test\n");
+    const app = createApp(envFile);
+    const res = await request(app).get("/api/settings");
+    expect(res.body.analysisModel).toBe("");
+  });
+
+  it("returns analysisModel when SEAM_ANALYSIS_MODEL is set", async () => {
+    writeFileSync(envFile, "POCKET_API_KEY=pk_test\nSEAM_ANALYSIS_MODEL=claude-sonnet-4-6\n");
+    const app = createApp(envFile);
+    const res = await request(app).get("/api/settings");
+    expect(res.body.analysisModel).toBe("claude-sonnet-4-6");
+  });
 });
 
 describe("PUT /api/settings", () => {
@@ -196,5 +213,24 @@ describe("PUT /api/settings", () => {
     expect(content).toContain("S3_BUCKET=bucket");
     expect(content).toContain("S3_PREFIX=data/");
     expect(content).toContain("AWS_PROFILE=prod");
+  });
+
+  it("writes SEAM_ANALYSIS_MODEL when analysisModel is set", async () => {
+    const app = createApp(envFile);
+    const res = await request(app)
+      .put("/api/settings")
+      .send({ analysisModel: "claude-haiku-4-5-20251001" });
+    expect(res.body.analysisModel).toBe("claude-haiku-4-5-20251001");
+    const content = readFileSync(envFile, "utf-8");
+    expect(content).toContain("SEAM_ANALYSIS_MODEL=claude-haiku-4-5-20251001");
+  });
+
+  it("clears SEAM_ANALYSIS_MODEL when analysisModel is empty string", async () => {
+    writeFileSync(envFile, "POCKET_API_KEY=pk_test\nSEAM_ANALYSIS_MODEL=claude-opus-4-7\n");
+    const app = createApp(envFile);
+    const res = await request(app).put("/api/settings").send({ analysisModel: "" });
+    expect(res.body.analysisModel).toBe("");
+    const content = readFileSync(envFile, "utf-8");
+    expect(content).toMatch(/SEAM_ANALYSIS_MODEL=\s*$/m);
   });
 });

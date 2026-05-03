@@ -11,7 +11,7 @@ export interface SyncState {
   error: string | null;
 }
 
-const API = "http://localhost:3001";
+const API = "";
 
 export function useSync() {
   const [state, setState] = useState<SyncState>({

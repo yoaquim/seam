@@ -17,7 +17,7 @@ import {
   Check,
 } from "lucide-react";
 
-const API = "http://localhost:3001";
+const API = "";
 
 interface SyncHistoryEntry {
   id: string;
@@ -246,7 +246,7 @@ function AutoSyncSetup() {
   const [projectPath, setProjectPath] = useState("/path/to/seam");
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/info")
+    fetch("/api/info")
       .then((r) => r.json())
       .then((data) => setProjectPath(data.root))
       .catch(() => {});

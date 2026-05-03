@@ -30,7 +30,16 @@ log() {
 
 mkdir -p "$ANALYSIS_DIR"
 
+# Build optional --model flag for Claude Code if SEAM_ANALYSIS_MODEL is set
+MODEL_ARGS=()
+if [ -n "${SEAM_ANALYSIS_MODEL:-}" ]; then
+    MODEL_ARGS=(--model "$SEAM_ANALYSIS_MODEL")
+fi
+
 log "=== Seam sync starting ==="
+if [ -n "${SEAM_ANALYSIS_MODEL:-}" ]; then
+    log "Using Claude model: $SEAM_ANALYSIS_MODEL"
+fi
 
 # ── Phase 1: Pull ──────────────────────────────────────────────
 PULL_EXIT=0
@@ -51,6 +60,7 @@ It should list recordings, fetch details with transcripts and summarizations, an
 
 Read the script, check the log at $LOG_FILE for error details, debug the issue and complete the sync." \
         --allowedTools "Bash,Read,Write,Glob,Grep" \
+        "${MODEL_ARGS[@]}" \
         2>&1 | tee -a "$LOG_FILE"
 fi
 
@@ -104,6 +114,12 @@ ANALYSIS_DIR="$3"
 ANALYZE_PROMPT="$4"
 PEOPLE_DATA="$5"
 LOG_FILE="$6"
+ANALYSIS_MODEL="${7:-}"
+
+MODEL_ARGS=()
+if [ -n "$ANALYSIS_MODEL" ]; then
+    MODEL_ARGS=(--model "$ANALYSIS_MODEL")
+fi
 
 log() {
     echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*" | tee -a "$LOG_FILE"
@@ -141,6 +157,7 @@ Write the structured JSON to: $ANALYSIS_OUT_DIR/analysis.json
 
 Use the Write tool to create both files. Do not output anything else." \
     --allowedTools "Write" \
+    "${MODEL_ARGS[@]}" \
     >> "$LOG_FILE" 2>&1
 
 # Verify analysis was created
@@ -154,7 +171,7 @@ ANALYZE_EOF
 
     # Use xargs -P for proper parallelism (works on bash 3.2 / macOS)
     printf '%s\n' "${UNANALYZED[@]}" | xargs -P "$MAX_PARALLEL" -I {} \
-        bash "$ANALYZE_SCRIPT" {} "$RECORDINGS_DIR" "$ANALYSIS_DIR" "$ANALYZE_PROMPT" "$PEOPLE_DATA" "$LOG_FILE"
+        bash "$ANALYZE_SCRIPT" {} "$RECORDINGS_DIR" "$ANALYSIS_DIR" "$ANALYZE_PROMPT" "$PEOPLE_DATA" "$LOG_FILE" "${SEAM_ANALYSIS_MODEL:-}"
 
     rm -f "$ANALYZE_SCRIPT"
     log "All analysis jobs complete."
