@@ -144,7 +144,7 @@ seam/
 │   ├── pocket-run.sh         # Orchestration: pull → analyze (5 parallel) → stage people → rebuild
 │   ├── build-manifest.py     # Aggregates data for the dashboard
 │   ├── stage-people.py       # Stages inferred speakers for review
-│   └── seed-people.py        # Seeds people from existing analyses
+│   └── seed_people.py        # Seeds people from existing analyses
 ├── prompts/
 │   └── analyze.md            # Claude analysis prompt template
 ├── server/

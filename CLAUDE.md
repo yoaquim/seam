@@ -18,7 +18,7 @@ Open-source Pocket AI companion — pulls recordings via API, analyzes with Clau
 - `scripts/pocket-run.sh` — orchestration: pull → analyze (5 parallel) → stage people → rebuild manifest
 - `scripts/build-manifest.py` — aggregates all recordings + analyses into `public/manifest.json`
 - `scripts/stage-people.py` — scans analyses for speaker names, stages for user review
-- `scripts/seed-people.py` — seeds people.json from existing analyses (contributed via PR)
+- `scripts/seed_people.py` — seeds people.json from existing analyses (contributed via PR)
 - `prompts/analyze.md` — prompt template for Claude analysis (includes speaker inference)
 - `server/index.ts` — Express API (sync, people, pending people, actions, speakers, settings)
 - `server/s3.ts` — S3 sync module (optional backup, used by server after mutations)
