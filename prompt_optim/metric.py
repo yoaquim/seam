@@ -48,9 +48,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from prompt_optim._seed_people_bridge import is_generic, load_generic_labels
-
 _REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# Import is_generic / load_generic_labels from scripts/seed_people.py so the
+# metric and production speaker-staging pipeline share one definition.
+import sys as _sys
+
+_sys.path.insert(0, str(_REPO_ROOT / "scripts"))
+from seed_people import is_generic, load_generic_labels  # noqa: E402
+
+_sys.path.pop(0)
 
 
 def _default_seam_dir() -> Path:

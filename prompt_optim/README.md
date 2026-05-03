@@ -21,7 +21,6 @@ billing on the subscription.
 | `metric.py`              | Reference-free deterministic metric. See [Metric components](#metric-components) below.                                                                                                                                                                                                                                                                            |
 | `adapter.py`             | Custom `GEPAAdapter`. Wraps the candidate prompt in the same delimiters used by `scripts/pocket-run.sh`, asks Claude to emit raw JSON to stdout (vs. the production prompt which writes via the Write tool), parses the response, scores it, and assembles reflective trajectories. Optionally re-runs the first batch example a second time to score consistency. |
 | `optimize.py`            | CLI driver. `python -m prompt_optim.optimize --budget 20`.                                                                                                                                                                                                                                                                                                         |
-| `_seed_people_bridge.py` | Bridge that imports `is_generic`/`load_generic_labels` from `scripts/seed-people.py` so the metric and the production scripts share one definition of "generic name".                                                                                                                                                                                              |
 | `_smoke_adapter.py`      | Single-example end-to-end smoke test of the adapter without the GEPA loop.                                                                                                                                                                                                                                                                                         |
 
 ## Metric components
@@ -40,7 +39,7 @@ gold-standard analyses, no LLM-as-judge.
 
 | Component                 | Weight | What it measures                                                                                                                                                                                                                                   |
 | ------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `speaker_grounding`       | 0.15   | Every name in `speaker_map.values()` is in `people.json` and not generic (per `scripts/seed-people.py:GENERIC_LABELS` + `.seam/generic-speakers.txt`).                                                                                             |
+| `speaker_grounding`       | 0.15   | Every name in `speaker_map.values()` is in `people.json` and not generic (per `scripts/seed_people.py:GENERIC_LABELS` + `.seam/generic-speakers.txt`).                                                                                             |
 | `participant_consistency` | 0.05   | `participants[]` ⊆ `people.json` ∪ `speaker_map.values()`, no generics. Catches invented participants.                                                                                                                                             |
 | `attribution_grounding`   | 0.15   | Aggregate grounding across `speaker_map`, `decisions[].by`, `key_quotes[].speaker`, `action_items[].owner`.                                                                                                                                        |
 | `quote_grounding`         | 0.15   | Each `key_quotes[].text` must appear as a substring (whitespace-fuzzed) in the transcript. The single biggest failure mode of the current prompt — average across the dataset is ~0.29.                                                            |
@@ -54,7 +53,7 @@ gold-standard analyses, no LLM-as-judge.
 
 - **No LLM-as-judge** in v1: doubles subscription burn; judge and task share blind spots.
 - **No reference-similarity to existing analyses**: those were produced by the prompt we're optimizing, so they're not gold standard. Optimizing toward them caps the result at "looks like the current output."
-- **Reuses `is_generic` from `scripts/seed-people.py`** so the metric and the production speaker-staging pipeline agree on what counts as a generic role label. Tweak `.seam/generic-speakers.txt` once and both pick it up.
+- **Reuses `is_generic` from `scripts/seed_people.py`** so the metric and the production speaker-staging pipeline agree on what counts as a generic role label. Tweak `.seam/generic-speakers.txt` once and both pick it up.
 
 ## Quick start
 
@@ -166,7 +165,7 @@ backoff state and call counters are preserved.
   re-tested in production mode before promotion (see step 2 above).
 - **No LLM-as-judge**: would double Max-quota spend and create a
   feedback loop where judge and task share blind spots.
-- **`is_generic` is sourced from `scripts/seed-people.py`**: the metric and
+- **`is_generic` is sourced from `scripts/seed_people.py`**: the metric and
   the production speaker-staging pipeline share one definition. To extend
   the rejection list, edit `.seam/generic-speakers.txt` (one label per line)
   and both pick it up automatically.
