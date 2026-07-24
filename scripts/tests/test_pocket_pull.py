@@ -169,6 +169,126 @@ class TestWriteRecording:
         assert "**Alice:**" in md
 
 
+class TestFindExistingDirForId:
+    def test_finds_dir_with_matching_id(self, tmp_path):
+        recordings_dir = tmp_path / "recordings"
+        rec_dir = recordings_dir / "2026-04-22_old-title"
+        rec_dir.mkdir(parents=True)
+        (rec_dir / "recording.json").write_text(json.dumps({"id": "rec_001"}))
+
+        with patch.object(pocket_pull, "RECORDINGS_DIR", recordings_dir):
+            assert pocket_pull.find_existing_dir_for_id("rec_001") == "2026-04-22_old-title"
+
+    def test_returns_none_when_id_not_found(self, tmp_path):
+        recordings_dir = tmp_path / "recordings"
+        rec_dir = recordings_dir / "2026-04-22_old-title"
+        rec_dir.mkdir(parents=True)
+        (rec_dir / "recording.json").write_text(json.dumps({"id": "rec_001"}))
+
+        with patch.object(pocket_pull, "RECORDINGS_DIR", recordings_dir):
+            assert pocket_pull.find_existing_dir_for_id("rec_999") is None
+
+    def test_returns_none_when_recordings_dir_missing(self, tmp_path):
+        with patch.object(pocket_pull, "RECORDINGS_DIR", tmp_path / "nonexistent"):
+            assert pocket_pull.find_existing_dir_for_id("rec_001") is None
+
+    def test_ignores_dirs_without_or_with_corrupt_json(self, tmp_path):
+        recordings_dir = tmp_path / "recordings"
+        (recordings_dir / "2026-04-22_no-json").mkdir(parents=True)
+        corrupt = recordings_dir / "2026-04-23_corrupt"
+        corrupt.mkdir()
+        (corrupt / "recording.json").write_text("{not json")
+
+        with patch.object(pocket_pull, "RECORDINGS_DIR", recordings_dir):
+            assert pocket_pull.find_existing_dir_for_id("rec_001") is None
+
+
+class TestDedupById:
+    """A recording whose title changed on Pocket's side (e.g. placeholder ->
+    real title) must be renamed in place, never duplicated under a new dir."""
+
+    def _write_existing(self, recordings_dir, dir_name, rec_id):
+        rec_dir = recordings_dir / dir_name
+        rec_dir.mkdir(parents=True)
+        (rec_dir / "recording.json").write_text(json.dumps({"id": rec_id, "title": "Old"}))
+        (rec_dir / "recording.md").write_text("# Old")
+        return rec_dir
+
+    def _pull(self, recordings_dir, analysis_dir, title="New Title"):
+        recording = {
+            "id": "rec_001",
+            "title": title,
+            "createdAt": "2026-04-22T09:00:00Z",
+        }
+        with patch.object(pocket_pull, "RECORDINGS_DIR", recordings_dir), \
+             patch.object(pocket_pull, "ANALYSIS_DIR", analysis_dir):
+            return pocket_pull.write_recording(recording, {})
+
+    def test_renames_dir_when_title_changes(self, tmp_path):
+        recordings_dir = tmp_path / "recordings"
+        analysis_dir = tmp_path / "analysis"
+        self._write_existing(recordings_dir, "2026-04-22_old-title", "rec_001")
+
+        dir_name = self._pull(recordings_dir, analysis_dir)
+
+        assert dir_name == "2026-04-22_new-title"
+        assert not (recordings_dir / "2026-04-22_old-title").exists()
+        data = json.loads((recordings_dir / dir_name / "recording.json").read_text())
+        assert data["id"] == "rec_001"
+        assert data["title"] == "New Title"
+
+    def test_moves_analysis_dir_on_rename(self, tmp_path):
+        recordings_dir = tmp_path / "recordings"
+        analysis_dir = tmp_path / "analysis"
+        self._write_existing(recordings_dir, "2026-04-22_old-title", "rec_001")
+        old_analysis = analysis_dir / "2026-04-22_old-title"
+        old_analysis.mkdir(parents=True)
+        (old_analysis / "analysis.json").write_text("{}")
+
+        dir_name = self._pull(recordings_dir, analysis_dir)
+
+        assert not old_analysis.exists()
+        assert (analysis_dir / dir_name / "analysis.json").exists()
+
+    def test_removes_stale_dir_when_new_dir_already_exists(self, tmp_path):
+        recordings_dir = tmp_path / "recordings"
+        analysis_dir = tmp_path / "analysis"
+        self._write_existing(recordings_dir, "2026-04-22_old-title", "rec_001")
+        self._write_existing(recordings_dir, "2026-04-22_new-title", "rec_001")
+
+        dir_name = self._pull(recordings_dir, analysis_dir)
+
+        assert dir_name == "2026-04-22_new-title"
+        assert not (recordings_dir / "2026-04-22_old-title").exists()
+        assert (recordings_dir / "2026-04-22_new-title" / "recording.json").exists()
+
+    def test_keeps_existing_analysis_when_both_dirs_have_one(self, tmp_path):
+        recordings_dir = tmp_path / "recordings"
+        analysis_dir = tmp_path / "analysis"
+        self._write_existing(recordings_dir, "2026-04-22_old-title", "rec_001")
+        self._write_existing(recordings_dir, "2026-04-22_new-title", "rec_001")
+        for name in ("2026-04-22_old-title", "2026-04-22_new-title"):
+            d = analysis_dir / name
+            d.mkdir(parents=True)
+            (d / "analysis.json").write_text(json.dumps({"from": name}))
+
+        dir_name = self._pull(recordings_dir, analysis_dir)
+
+        assert not (analysis_dir / "2026-04-22_old-title").exists()
+        kept = json.loads((analysis_dir / dir_name / "analysis.json").read_text())
+        assert kept["from"] == "2026-04-22_new-title"
+
+    def test_no_rename_when_dir_name_unchanged(self, tmp_path):
+        recordings_dir = tmp_path / "recordings"
+        analysis_dir = tmp_path / "analysis"
+
+        first = self._pull(recordings_dir, analysis_dir)
+        second = self._pull(recordings_dir, analysis_dir)
+
+        assert first == second == "2026-04-22_new-title"
+        assert [d.name for d in recordings_dir.iterdir()] == ["2026-04-22_new-title"]
+
+
 class TestListRecordings:
     @patch("pocket_pull.api_get")
     def test_single_page(self, mock_get):

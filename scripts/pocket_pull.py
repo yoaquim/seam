@@ -8,6 +8,7 @@ writes structured JSON + markdown to .seam/recordings/.
 import json
 import os
 import random
+import shutil
 import sys
 import time
 import urllib.request
@@ -18,6 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / ".seam"
 RECORDINGS_DIR = DATA_DIR / "recordings"
+ANALYSIS_DIR = DATA_DIR / "analysis"
 SYNC_FILE = ROOT / ".pocket-last-sync"
 DELETED_FILE = DATA_DIR / ".deleted"
 PENDING_FETCH_FILE = DATA_DIR / ".pending-fetch"
@@ -234,6 +236,52 @@ def extract_summary(summarizations: dict) -> dict:
     }
 
 
+def find_existing_dirs_for_id(rec_id: str) -> list[str]:
+    """Return dir names of already-pulled recordings with this ID."""
+    if not RECORDINGS_DIR.exists():
+        return []
+    matches = []
+    for rec_dir in sorted(RECORDINGS_DIR.iterdir()):
+        rec_json = rec_dir / "recording.json"
+        if not rec_json.exists():
+            continue
+        try:
+            if json.loads(rec_json.read_text()).get("id") == rec_id:
+                matches.append(rec_dir.name)
+        except (json.JSONDecodeError, OSError):
+            continue
+    return matches
+
+
+def find_existing_dir_for_id(rec_id: str) -> str | None:
+    """Return the dir name of an already-pulled recording with this ID, if any."""
+    matches = find_existing_dirs_for_id(rec_id)
+    return matches[0] if matches else None
+
+
+def relocate_recording_dir(old_name: str, new_name: str) -> None:
+    """Move a recording dir (and its analysis dir) to a new name after a title
+    change on Pocket's side. If the new dir already exists, the old one is a
+    stale duplicate — drop it and keep the new dir's analysis if present."""
+    old_rec = RECORDINGS_DIR / old_name
+    new_rec = RECORDINGS_DIR / new_name
+    if new_rec.exists():
+        shutil.rmtree(old_rec)
+    else:
+        old_rec.rename(new_rec)
+
+    old_analysis = ANALYSIS_DIR / old_name
+    new_analysis = ANALYSIS_DIR / new_name
+    if old_analysis.exists():
+        if new_analysis.exists():
+            shutil.rmtree(old_analysis)
+        else:
+            new_analysis.parent.mkdir(parents=True, exist_ok=True)
+            old_analysis.rename(new_analysis)
+
+    print(f"  Renamed {old_name}/ -> {new_name}/ (title changed)")
+
+
 def write_recording(recording: dict, details: dict, deleted: set[str] | None = None):
     """Write recording data as structured JSON and human-readable markdown."""
     rec_id = recording.get("id") or details.get("id") or "unknown"
@@ -253,6 +301,13 @@ def write_recording(recording: dict, details: dict, deleted: set[str] | None = N
     if deleted and dir_name in deleted:
         print(f"  Skipping {dir_name} (previously deleted)")
         return None
+
+    # Pocket may retitle a recording after processing (placeholder -> real
+    # title). If this ID already lives under a different dir name, move it
+    # instead of creating a duplicate.
+    for existing in find_existing_dirs_for_id(rec_id):
+        if existing != dir_name:
+            relocate_recording_dir(existing, dir_name)
 
     rec_dir = RECORDINGS_DIR / dir_name
     rec_dir.mkdir(parents=True, exist_ok=True)
