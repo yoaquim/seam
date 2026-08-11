@@ -37,3 +37,10 @@ public/manifest.json
 
 # Claude Code
 .claude/*.local.json
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+
+# GEPA / prompt optimization
+.venv-gepa/
+prompts/analyze.optimized*.md
+gepa-runs/
